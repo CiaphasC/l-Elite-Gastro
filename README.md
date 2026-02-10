@@ -1,6 +1,6 @@
 # L'Élite Gastro
 
-Proyecto React modular construido a partir del archivo legado `prueba2.html`.
+Proyecto React + TypeScript modular construido a partir del archivo legado `prueba2.html`.
 
 ## Ejecutar
 
@@ -16,6 +16,12 @@ npm run build
 npm run preview
 ```
 
+## Validacion de tipos
+
+```bash
+npm run typecheck
+```
+
 ## Estructura
 
 ```text
@@ -29,5 +35,5 @@ src/
 
 ## Notas
 
-- Archivo legado preservado: `docs/prueba2.legacy.react.jsx`.
+- Archivo legado preservado: `docs/prueba2.legacy.react.tsx`.
 - Archivo original sin tocar: `prueba2.html`.
