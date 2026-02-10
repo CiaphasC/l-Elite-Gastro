@@ -1,0 +1,160 @@
+export const INITIAL_MENU_ITEMS = [
+  {
+    id: 1,
+    name: "Carpaccio de Wagyu A5",
+    price: 45,
+    category: "Entrantes",
+    img: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&q=80&w=800",
+    stock: 12,
+    unit: "raciones",
+  },
+  {
+    id: 2,
+    name: "Ostras Fine de Claire",
+    price: 38,
+    category: "Entrantes",
+    img: "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&q=80&w=800",
+    stock: 5,
+    unit: "docenas",
+  },
+  {
+    id: 3,
+    name: "Solomillo Rossini",
+    price: 56,
+    category: "Principales",
+    img: "https://images.unsplash.com/photo-1546241072-48010ad28c2c?auto=format&fit=crop&q=80&w=800",
+    stock: 20,
+    unit: "kg",
+  },
+  {
+    id: 4,
+    name: "Lubina Salvaje",
+    price: 48,
+    category: "Principales",
+    img: "https://images.unsplash.com/photo-1534604973900-c41ab4c5e636?auto=format&fit=crop&q=80&w=800",
+    stock: 8,
+    unit: "piezas",
+  },
+  {
+    id: 5,
+    name: "Dom Perignon '12",
+    price: 320,
+    category: "Vinos",
+    img: "https://images.unsplash.com/photo-1594460750222-29307c67b2fd?auto=format&fit=crop&q=80&w=800",
+    stock: 4,
+    unit: "botellas",
+  },
+  {
+    id: 6,
+    name: "Old Fashioned Ahumado",
+    price: 22,
+    category: "Cocteleria",
+    img: "https://images.unsplash.com/photo-1514362545857-3bc16549766b?auto=format&fit=crop&q=80&w=800",
+    stock: 50,
+    unit: "copas",
+  },
+  {
+    id: 7,
+    name: "Souffle Grand Marnier",
+    price: 18,
+    category: "Postres",
+    img: "https://images.unsplash.com/photo-1579954115545-a95591f28bee?auto=format&fit=crop&q=80&w=800",
+    stock: 15,
+    unit: "raciones",
+  },
+];
+
+export const TABLES = [
+  { id: 101, status: "disponible", guests: 0 },
+  { id: 102, status: "ocupada", guests: 4 },
+  { id: 103, status: "reservada", guests: 2 },
+  { id: 104, status: "disponible", guests: 0 },
+  { id: 105, status: "limpieza", guests: 0 },
+  { id: 106, status: "disponible", guests: 0 },
+  { id: 107, status: "ocupada", guests: 3 },
+  { id: 108, status: "reservada", guests: 6 },
+];
+
+export const INITIAL_RESERVATIONS = [
+  {
+    id: 1,
+    name: "Roberto M.",
+    time: "21:00",
+    guests: 2,
+    table: 103,
+    type: "Aniversario",
+    status: "confirmado",
+  },
+  {
+    id: 2,
+    name: "Familia Alarcon",
+    time: "21:30",
+    guests: 6,
+    table: 108,
+    type: "Cena",
+    status: "pendiente",
+  },
+  {
+    id: 3,
+    name: "CEO Tech Corp",
+    time: "22:00",
+    guests: 4,
+    table: 101,
+    type: "Negocios",
+    status: "vip",
+  },
+];
+
+export const CLIENTS = [
+  {
+    id: 1,
+    name: "Isabella V.",
+    tier: "Platinum",
+    visits: 42,
+    spend: "$12,450",
+    lastVisit: "Ayer",
+    preferences: "Mesa lejos de la entrada, alergica a mariscos.",
+  },
+  {
+    id: 2,
+    name: "Carlos D.",
+    tier: "Gold",
+    visits: 15,
+    spend: "$3,200",
+    lastVisit: "Hace 1 semana",
+    preferences: "Prefiere vino tinto Cabernet.",
+  },
+];
+
+export const INITIAL_KITCHEN_ORDERS = [
+  {
+    id: "T-102",
+    items: [
+      { name: "Carpaccio Wagyu", qty: 1 },
+      { name: "Lubina", qty: 2 },
+    ],
+    time: "12 min",
+    status: "cooking",
+    waiter: "Pedro G.",
+    notes: "Sin sal en la lubina",
+  },
+  {
+    id: "T-105",
+    items: [
+      { name: "Ostras", qty: 1 },
+      { name: "Solomillo", qty: 1 },
+    ],
+    time: "5 min",
+    status: "pending",
+    waiter: "Maria C.",
+    notes: "Solomillo muy hecho",
+  },
+  {
+    id: "T-108",
+    items: [{ name: "Souffle", qty: 4 }],
+    time: "2 min",
+    status: "ready",
+    waiter: "Pedro G.",
+    notes: "Servir todos a la vez",
+  },
+];
