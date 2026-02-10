@@ -99,7 +99,7 @@ const App = () => {
       { opacity: 0, y: 20, filter: "blur(10px)" },
       { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.65, ease: "power3.out" }
     );
-  }, [state.ui.isLoading, state.activeTab]);
+  }, [state.ui.isLoading]);
 
   if (state.ui.isLoading) {
     return <LoadingScreen />;
