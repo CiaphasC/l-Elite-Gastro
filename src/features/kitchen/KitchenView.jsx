@@ -34,7 +34,7 @@ const KitchenView = ({ orders, onOpenKitchenModal }) => (
           </div>
         </div>
 
-        <div className="flex-1 bg-gradient-to-b from-transparent to-black/20 p-6">
+        <div className="flex-1 bg-gradient-to-b from-transparent to-black/20 p-5 sm:p-6">
           <ul className="space-y-4">
             {order.items.map((item, itemIndex) => (
               <li key={`${order.id}-${itemIndex}`} className="flex items-center justify-between text-sm">
@@ -59,7 +59,7 @@ const KitchenView = ({ orders, onOpenKitchenModal }) => (
           )}
         </div>
 
-        <div className="flex gap-3 border-t border-white/5 bg-black/40 p-4">
+        <div className="flex flex-col gap-3 border-t border-white/5 bg-black/40 p-4 sm:flex-row">
           <button
             onClick={() => onOpenKitchenModal("kitchen-serve", order.id)}
             className="flex-1 rounded-xl border border-[#E5C07B]/20 bg-[#E5C07B]/10 py-3 text-[10px] font-black uppercase tracking-widest text-[#E5C07B] transition-all hover:bg-[#E5C07B] hover:text-black"

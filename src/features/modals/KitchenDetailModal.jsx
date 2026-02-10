@@ -8,31 +8,31 @@ const KitchenDetailModal = ({ order, onClose, onMarkToServe }) => {
 
   return (
     <ModalBackdrop>
-      <div className="glass-panel relative w-full max-w-2xl rounded-[2.5rem] p-10">
-        <button onClick={onClose} className="absolute right-6 top-6 text-zinc-500 hover:text-white">
+      <div className="glass-panel custom-scroll relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] p-5 sm:rounded-[2.5rem] sm:p-10">
+        <button onClick={onClose} className="absolute right-5 top-5 text-zinc-500 hover:text-white sm:right-6 sm:top-6">
           <X size={24} />
         </button>
 
-        <div className="mb-8 flex items-start justify-between">
+        <div className="mb-6 flex flex-col gap-4 pr-10 sm:mb-8 sm:flex-row sm:items-start sm:justify-between sm:pr-0">
           <div>
-            <h3 className="font-serif text-3xl text-white">Mesa {order.id}</h3>
+            <h3 className="font-serif text-2xl text-white sm:text-3xl">Mesa {order.id}</h3>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-[#E5C07B]">
               Camarero: {order.waiter}
             </p>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tiempo</p>
             <p className="font-mono text-2xl text-white">{order.time}</p>
           </div>
         </div>
 
-        <div className="mb-8 space-y-6">
+        <div className="mb-6 space-y-4 sm:mb-8 sm:space-y-6">
           {order.items.map((item, index) => (
             <div
               key={`${order.id}-${index}`}
-              className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-4"
+              className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-4"
             >
-              <span className="text-lg text-zinc-200">{item.name}</span>
+              <span className="text-base text-zinc-200 sm:text-lg">{item.name}</span>
               <span className="rounded-lg bg-[#E5C07B]/10 px-3 py-1 font-mono font-bold text-[#E5C07B]">
                 x{item.qty}
               </span>

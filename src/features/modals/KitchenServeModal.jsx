@@ -8,11 +8,11 @@ const KitchenServeModal = ({ order, onClose, onConfirm }) => {
 
   return (
     <ModalBackdrop>
-      <div className="glass-panel w-full max-w-md rounded-[2.5rem] border border-emerald-500/20 p-12 text-center">
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
+      <div className="glass-panel w-full max-w-md rounded-[2rem] border border-emerald-500/20 p-6 text-center sm:rounded-[2.5rem] sm:p-12">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 sm:mb-6 sm:h-20 sm:w-20">
           <ChefHat size={32} />
         </div>
-        <h3 className="mb-4 font-serif text-3xl text-white">Platos Listos?</h3>
+        <h3 className="mb-3 font-serif text-2xl text-white sm:mb-4 sm:text-3xl">Platos Listos?</h3>
         <p className="mb-8 text-sm italic text-zinc-400">
           Confirma que la orden para <strong>{order.id}</strong> esta completa y lista para
           ser servida.

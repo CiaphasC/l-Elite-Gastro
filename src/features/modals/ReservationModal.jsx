@@ -36,13 +36,13 @@ const ReservationModal = ({ isOpen, onClose, onSubmitReservation }) => {
 
   return (
     <ModalBackdrop>
-      <div className="glass-panel relative w-full max-w-lg rounded-[3rem] p-10">
-        <button onClick={onClose} className="absolute right-8 top-8 text-zinc-500 hover:text-white">
+      <div className="glass-panel custom-scroll relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[2rem] p-5 sm:rounded-[3rem] sm:p-10">
+        <button onClick={onClose} className="absolute right-5 top-5 text-zinc-500 hover:text-white sm:right-8 sm:top-8">
           <X size={24} />
         </button>
 
-        <h3 className="mb-2 font-serif text-3xl text-white">Nueva Reserva</h3>
-        <p className="mb-8 text-xs uppercase tracking-widest text-zinc-500">
+        <h3 className="mb-2 pr-8 font-serif text-2xl text-white sm:text-3xl">Nueva Reserva</h3>
+        <p className="mb-6 text-xs uppercase tracking-[0.2em] text-zinc-500 sm:mb-8 sm:tracking-widest">
           Registrar cliente en agenda
         </p>
 
@@ -62,7 +62,7 @@ const ReservationModal = ({ isOpen, onClose, onSubmitReservation }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="ml-2 mb-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-400">
                 Hora
@@ -96,13 +96,13 @@ const ReservationModal = ({ isOpen, onClose, onSubmitReservation }) => {
             <label className="ml-2 mb-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-400">
               Tipo de Evento
             </label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               {RESERVATION_TYPES.map((type) => (
                 <button
                   type="button"
                   key={type}
                   onClick={() => updateField("type", type)}
-                  className={`flex-1 rounded-lg border py-2 text-[10px] font-bold uppercase transition-all ${
+                  className={`rounded-lg border py-2 text-[10px] font-bold uppercase transition-all sm:flex-1 ${
                     formState.type === type
                       ? "border-[#E5C07B]/30 bg-[#E5C07B]/10 text-[#E5C07B]"
                       : "border-white/10 bg-white/5 text-zinc-400 hover:border-[#E5C07B]/30 hover:bg-[#E5C07B]/10 hover:text-[#E5C07B]"

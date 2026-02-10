@@ -10,33 +10,35 @@ const DashboardView = ({ stockAlerts, onOpenInventoryTab }) => (
     <StatsCard title="Ticket Medio" value="$157" trend="-2%" icon={<CreditCard size={20} />} />
     <StatsCard title="T. Servicio" value="14 min" trend="Optimo" icon={<Clock size={20} />} />
 
-    <div className="glass-panel col-span-1 mt-4 rounded-[2rem] p-8 lg:col-span-3">
-      <h3 className="mb-8 flex items-center gap-4 font-serif text-2xl text-white">
+    <div className="glass-panel col-span-1 mt-2 rounded-[2rem] p-5 sm:mt-4 sm:p-8 lg:col-span-3">
+      <h3 className="mb-6 flex items-center gap-3 font-serif text-xl text-white sm:mb-8 sm:gap-4 sm:text-2xl">
         <Star className="fill-[#E5C07B]/20 text-[#E5C07B]" size={20} />
         Rendimiento Semanal
       </h3>
-      <div className="flex h-64 w-full items-end gap-4 px-4">
-        {weeklyPerformance.map((height, index) => (
-          <div
-            key={`${index}-${height}`}
-            className="group flex flex-1 cursor-pointer flex-col items-center gap-3"
-          >
+      <div className="custom-scroll overflow-x-auto">
+        <div className="flex h-60 min-w-[500px] items-end gap-4 px-2 sm:h-64 sm:px-4">
+          {weeklyPerformance.map((height, index) => (
             <div
-              className="relative w-full overflow-hidden rounded-t-lg bg-white/5 transition-all duration-500 group-hover:bg-[#E5C07B]/20"
-              style={{ height: `${height}%` }}
+              key={`${index}-${height}`}
+              className="group flex flex-1 cursor-pointer flex-col items-center gap-3"
             >
-              <div className="absolute bottom-0 left-0 h-full w-full bg-gradient-to-t from-[#E5C07B]/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="absolute left-0 top-0 h-[2px] w-full bg-[#E5C07B] shadow-[0_0_10px_#E5C07B]" />
+              <div
+                className="relative w-full overflow-hidden rounded-t-lg bg-white/5 transition-all duration-500 group-hover:bg-[#E5C07B]/20"
+                style={{ height: `${height}%` }}
+              >
+                <div className="absolute bottom-0 left-0 h-full w-full bg-gradient-to-t from-[#E5C07B]/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                <div className="absolute left-0 top-0 h-[2px] w-full bg-[#E5C07B] shadow-[0_0_10px_#E5C07B]" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 transition-colors group-hover:text-[#E5C07B]">
+                Dia {index + 1}
+              </span>
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 transition-colors group-hover:text-[#E5C07B]">
-              Dia {index + 1}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
 
-    <div className="glass-panel mt-4 flex flex-col rounded-[2rem] p-8">
+    <div className="glass-panel mt-2 flex flex-col rounded-[2rem] p-5 sm:mt-4 sm:p-8">
       <h3 className="mb-6 font-serif text-xl text-white">Alertas Stock</h3>
       <div className="flex-1 space-y-4">
         {stockAlerts.slice(0, 3).map((item) => (

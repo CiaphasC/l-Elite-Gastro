@@ -8,6 +8,7 @@ import DashboardView from "../features/dashboard/DashboardView";
 import InventoryView from "../features/inventory/InventoryView";
 import KitchenView from "../features/kitchen/KitchenView";
 import Header from "../features/layout/Header";
+import MobileTabNav from "../features/layout/MobileTabNav";
 import Sidebar from "../features/layout/Sidebar";
 import MenuView from "../features/menu/MenuView";
 import CheckoutModal from "../features/modals/CheckoutModal";
@@ -107,7 +108,7 @@ const App = () => {
   const selectedKitchenOrder = derived.selectedKitchenOrder;
 
   return (
-    <div className="relative flex h-screen select-none overflow-hidden bg-[#050505] text-zinc-300">
+    <div className="relative flex h-dvh min-h-dvh select-none overflow-hidden bg-[#050505] text-zinc-300">
       <div className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full overflow-hidden">
         <div className="absolute left-[-10%] top-[-10%] h-[40%] w-[40%] animate-pulse rounded-full bg-[#E5C07B]/5 blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] h-[40%] w-[40%] rounded-full bg-[#E5C07B]/5 blur-[120px]" />
@@ -115,13 +116,17 @@ const App = () => {
 
       <Sidebar activeTab={state.activeTab} onTabChange={actions.setActiveTab} />
 
-      <main ref={mainContentRef} className="custom-scroll relative z-10 flex-1 overflow-y-auto p-10">
+      <main
+        ref={mainContentRef}
+        className="custom-scroll relative z-10 flex-1 overflow-y-auto px-4 pb-28 pt-5 sm:px-6 sm:pt-6 lg:p-10 lg:pb-10"
+      >
         <Header
           activeTab={state.activeTab}
           notifications={state.notifications}
           searchTerm={state.searchTerm}
           onSearchTermChange={actions.setSearchTerm}
         />
+        <MobileTabNav activeTab={state.activeTab} onTabChange={actions.setActiveTab} />
         {renderTabView(state.activeTab, state, actions, derived)}
       </main>
 

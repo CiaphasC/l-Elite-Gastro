@@ -5,15 +5,15 @@ const ClientsView = ({ clients }) => (
     {clients.map((client) => (
       <div
         key={client.id}
-        className="glass-panel group rounded-[2rem] p-8 transition-all hover:border-[#E5C07B]/30"
+        className="glass-panel group rounded-[2rem] p-5 transition-all hover:border-[#E5C07B]/30 sm:p-8"
       >
-        <div className="mb-6 flex items-start justify-between">
-          <div className="flex items-center gap-4">
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-zinc-800 to-zinc-900 font-serif text-2xl text-[#E5C07B]">
               {client.name.charAt(0)}
             </div>
-            <div>
-              <h4 className="font-serif text-xl text-white">{client.name}</h4>
+            <div className="min-w-0">
+              <h4 className="truncate font-serif text-lg text-white sm:text-xl">{client.name}</h4>
               <span
                 className={`rounded border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${
                   client.tier === "Platinum"
@@ -30,7 +30,7 @@ const ClientsView = ({ clients }) => (
           </button>
         </div>
 
-        <div className="mb-6 grid grid-cols-3 gap-4 border-b border-white/5 pb-6">
+        <div className="mb-6 grid grid-cols-2 gap-4 border-b border-white/5 pb-6 sm:grid-cols-3">
           <div>
             <p className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">Visitas</p>
             <p className="font-mono text-white">{client.visits}</p>
