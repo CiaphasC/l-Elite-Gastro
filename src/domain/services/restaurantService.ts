@@ -7,10 +7,36 @@ import type {
 } from "@/types";
 
 const clampAtZero = (value: number): number => Math.max(0, value);
+const clampInRange = (value: number, min: number, max: number): number =>
+  Math.min(Math.max(value, min), max);
 
-export const addItemToCart = (cart: CartItem[], item: MenuItem): CartItem[] => {
+const getInventoryStock = (inventory: MenuItem[], itemId: number): number =>
+  inventory.find((item) => item.id === itemId)?.stock ?? 0;
+
+const createReservationId = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `rsv-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+};
+
+export const addItemToCart = (
+  cart: CartItem[],
+  item: MenuItem,
+  inventory: MenuItem[]
+): CartItem[] => {
+  const itemStock = getInventoryStock(inventory, item.id);
+  if (itemStock <= 0) {
+    return cart;
+  }
+
   const existingItem = cart.find((line) => line.id === item.id);
   if (existingItem) {
+    if (existingItem.qty >= itemStock) {
+      return cart;
+    }
+
     return cart.map((line) =>
       line.id === item.id ? { ...line, qty: line.qty + 1 } : line
     );
@@ -21,6 +47,7 @@ export const addItemToCart = (cart: CartItem[], item: MenuItem): CartItem[] => {
 
 export const updateCartItemQty = (
   cart: CartItem[],
+  inventory: MenuItem[],
   itemId: number,
   delta: number
 ): CartItem[] =>
@@ -30,7 +57,9 @@ export const updateCartItemQty = (
         return line;
       }
 
-      return { ...line, qty: clampAtZero(line.qty + delta) };
+      const stock = getInventoryStock(inventory, itemId);
+      const nextQty = clampInRange(line.qty + delta, 0, stock);
+      return { ...line, qty: nextQty };
     })
     .filter((line) => line.qty > 0);
 
@@ -47,17 +76,54 @@ export const updateInventoryStock = (
     return { ...item, stock: clampAtZero(item.stock + delta) };
   });
 
+export const reconcileCartWithInventory = (
+  cart: CartItem[],
+  inventory: MenuItem[]
+): CartItem[] =>
+  cart
+    .map((line) => {
+      const stock = getInventoryStock(inventory, line.id);
+      return { ...line, qty: clampInRange(line.qty, 0, stock) };
+    })
+    .filter((line) => line.qty > 0);
+
+export const applyCheckoutToInventory = (
+  inventory: MenuItem[],
+  cart: CartItem[]
+): MenuItem[] => {
+  const qtyByItemId = new Map<number, number>();
+  for (const cartItem of cart) {
+    qtyByItemId.set(cartItem.id, (qtyByItemId.get(cartItem.id) ?? 0) + cartItem.qty);
+  }
+
+  return inventory.map((inventoryItem) => {
+    const reservedQty = qtyByItemId.get(inventoryItem.id) ?? 0;
+    if (reservedQty === 0) {
+      return inventoryItem;
+    }
+
+    return {
+      ...inventoryItem,
+      stock: clampAtZero(inventoryItem.stock - reservedQty),
+    };
+  });
+};
+
 export const appendReservation = (
   reservations: Reservation[],
   reservationPayload: ReservationPayload
 ): Reservation[] => {
-  const reservation = {
-    id: Date.now(),
+  const normalizedGuests = Number.isFinite(reservationPayload.guests)
+    ? Math.max(1, Math.trunc(reservationPayload.guests))
+    : 1;
+
+  const reservation: Reservation = {
+    id: createReservationId(),
     name: reservationPayload.name.trim(),
     time: reservationPayload.time,
-    guests: Number(reservationPayload.guests),
+    guests: normalizedGuests,
     table: "---",
-    type: reservationPayload.type || "Nueva",
+    type: reservationPayload.type || "Cena",
     status: "pendiente",
   };
 

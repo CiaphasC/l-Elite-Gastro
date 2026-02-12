@@ -1,9 +1,8 @@
-const formatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+import { DEFAULT_CURRENCY_CODE, formatCurrencyFromUsd } from "@/domain/currency";
+import type { SupportedCurrencyCode } from "@/types";
 
-export const formatCurrency = (value: number): string => formatter.format(value);
+export const formatCurrency = (
+  valueInUsd: number,
+  currencyCode: SupportedCurrencyCode = DEFAULT_CURRENCY_CODE
+): string => formatCurrencyFromUsd(valueInUsd, currencyCode);
 

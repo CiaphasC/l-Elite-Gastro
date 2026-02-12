@@ -14,7 +14,7 @@ const KitchenDetailModal = ({ order, onClose, onMarkToServe }: KitchenDetailModa
   }
 
   return (
-    <ModalBackdrop>
+    <ModalBackdrop onRequestClose={onClose}>
       <div className="glass-panel custom-scroll relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] p-5 sm:rounded-[2.5rem] sm:p-10">
         <button onClick={onClose} className="absolute right-5 top-5 text-zinc-500 hover:text-white sm:right-6 sm:top-6">
           <X size={24} />

@@ -1,11 +1,13 @@
 import { Eye, Star } from "lucide-react";
-import type { Client } from "@/types";
+import type { Client, SupportedCurrencyCode } from "@/types";
+import { formatCurrency } from "@/shared/formatters/currency";
 
 interface ClientsViewProps {
   clients: Client[];
+  currencyCode: SupportedCurrencyCode;
 }
 
-const ClientsView = ({ clients }: ClientsViewProps) => (
+const ClientsView = ({ clients, currencyCode }: ClientsViewProps) => (
   <div className="grid grid-cols-1 gap-6 animate-in fade-in duration-500 md:grid-cols-2">
     {clients.map((client) => (
       <div
@@ -44,7 +46,7 @@ const ClientsView = ({ clients }: ClientsViewProps) => (
             <p className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">
               Gasto Total
             </p>
-            <p className="font-mono text-[#E5C07B]">{client.spend}</p>
+            <p className="font-mono text-[#E5C07B]">{formatCurrency(client.spend, currencyCode)}</p>
           </div>
           <div>
             <p className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">

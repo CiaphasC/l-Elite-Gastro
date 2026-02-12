@@ -1,78 +1,17 @@
 import { useEffect, useRef } from "react";
-import type { ReactNode } from "react";
 import { gsap } from "gsap";
-import type { ActiveTab, RestaurantActions, RestaurantDerived, RestaurantState } from "@/types";
 import { useRestaurantStore } from "@/app/useRestaurantStore";
 import CartPanel from "@/features/cart/CartPanel";
 import MobileCartDrawer from "@/features/cart/MobileCartDrawer";
-import ClientsView from "@/features/clients/ClientsView";
-import DashboardView from "@/features/dashboard/DashboardView";
-import InventoryView from "@/features/inventory/InventoryView";
-import KitchenView from "@/features/kitchen/KitchenView";
+import { featureRegistry } from "@/features/registry";
 import Header from "@/features/layout/Header";
 import MobileTabNav from "@/features/layout/MobileTabNav";
 import Sidebar from "@/features/layout/Sidebar";
-import MenuView from "@/features/menu/MenuView";
 import CheckoutModal from "@/features/modals/CheckoutModal";
 import KitchenDetailModal from "@/features/modals/KitchenDetailModal";
 import KitchenServeModal from "@/features/modals/KitchenServeModal";
 import ReservationModal from "@/features/modals/ReservationModal";
-import ReservationsView from "@/features/reservations/ReservationsView";
-import SettingsView from "@/features/settings/SettingsView";
-import TablesView from "@/features/tables/TablesView";
 import LoadingScreen from "@/shared/components/LoadingScreen";
-
-const renderTabView = (
-  tabId: ActiveTab,
-  state: RestaurantState,
-  actions: RestaurantActions,
-  derived: RestaurantDerived
-): ReactNode => {
-  switch (tabId) {
-    case "dash":
-      return (
-        <DashboardView
-          stockAlerts={derived.lowStockItems}
-          onOpenInventoryTab={() => actions.setActiveTab("inventory")}
-        />
-      );
-    case "menu":
-      return (
-        <MenuView
-          selectedCategory={state.selectedCategory}
-          onSelectCategory={actions.setSelectedCategory}
-          items={derived.filteredMenuItems}
-          onAddToCart={actions.addToCart}
-        />
-      );
-    case "reservations":
-      return (
-        <ReservationsView
-          reservations={state.reservations}
-          onOpenNewReservation={actions.openReservationModal}
-        />
-      );
-    case "kitchen":
-      return <KitchenView orders={state.kitchenOrders} onOpenKitchenModal={actions.openKitchenModal} />;
-    case "clients":
-      return <ClientsView clients={derived.filteredClients} />;
-    case "inventory":
-      return <InventoryView items={derived.filteredInventoryItems} onAdjustStock={actions.adjustStock} />;
-    case "tables":
-      return <TablesView tables={state.tables} />;
-    case "settings":
-      return <SettingsView />;
-    default:
-      return (
-        <MenuView
-          selectedCategory={state.selectedCategory}
-          onSelectCategory={actions.setSelectedCategory}
-          items={derived.filteredMenuItems}
-          onAddToCart={actions.addToCart}
-        />
-      );
-  }
-};
 
 const App = () => {
   const mainContentRef = useRef<HTMLElement | null>(null);
@@ -103,6 +42,7 @@ const App = () => {
   }
 
   const selectedKitchenOrder = derived.selectedKitchenOrder;
+  const activeFeature = featureRegistry[state.activeTab];
 
   return (
     <div className="relative flex h-dvh min-h-dvh select-none overflow-hidden bg-[#050505] text-zinc-300">
@@ -118,20 +58,23 @@ const App = () => {
         className="custom-scroll relative z-10 flex-1 overflow-y-auto px-4 pb-28 pt-5 sm:px-6 sm:pt-6 lg:p-10 lg:pb-10"
       >
         <Header
-          activeTab={state.activeTab}
+          title={activeFeature.title}
+          showSearch={activeFeature.searchEnabled}
           notifications={state.notifications}
           searchTerm={state.searchTerm}
           onSearchTermChange={actions.setSearchTerm}
         />
         <MobileTabNav activeTab={state.activeTab} onTabChange={actions.setActiveTab} />
-        {renderTabView(state.activeTab, state, actions, derived)}
+        {activeFeature.render({ state, actions, derived })}
       </main>
 
       <CartPanel
         cartItems={state.cart}
+        currencyCode={state.currencyCode}
         subtotal={derived.cartSubtotal}
         serviceFee={derived.cartServiceFee}
         total={derived.cartTotal}
+        serviceContext={state.serviceContext}
         onClearCart={actions.clearCart}
         onUpdateQty={actions.updateCartQty}
         onOpenCheckout={actions.openCheckout}
@@ -139,6 +82,7 @@ const App = () => {
 
       <MobileCartDrawer
         cartItems={state.cart}
+        currencyCode={state.currencyCode}
         itemCount={derived.cartItemsCount}
         subtotal={derived.cartSubtotal}
         serviceFee={derived.cartServiceFee}
@@ -148,7 +92,13 @@ const App = () => {
         onOpenCheckout={actions.openCheckout}
       />
 
-      <CheckoutModal isOpen={state.ui.showCheckout} total={derived.cartTotal} onConfirm={actions.confirmCheckout} />
+      <CheckoutModal
+        isOpen={state.ui.showCheckout}
+        currencyCode={state.currencyCode}
+        total={derived.cartTotal}
+        onClose={actions.closeCheckout}
+        onConfirm={actions.confirmCheckout}
+      />
 
       <KitchenServeModal
         order={state.ui.kitchenModalType === "kitchen-serve" ? selectedKitchenOrder : null}
@@ -176,4 +126,3 @@ const App = () => {
 };
 
 export default App;
-

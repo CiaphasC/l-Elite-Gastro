@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { X } from "lucide-react";
 import { RESERVATION_TYPES } from "@/domain/constants";
@@ -21,13 +21,14 @@ interface ReservationModalProps {
 const ReservationModal = ({ isOpen, onClose, onSubmitReservation }: ReservationModalProps) => {
   const [formState, setFormState] = useState(defaultFormState);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
+  const resetForm = () => {
     setFormState(defaultFormState);
-  }, [isOpen]);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   if (!isOpen) {
     return null;
@@ -43,12 +44,13 @@ const ReservationModal = ({ isOpen, onClose, onSubmitReservation }: ReservationM
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmitReservation(formState);
+    resetForm();
   };
 
   return (
-    <ModalBackdrop>
+    <ModalBackdrop onRequestClose={handleClose}>
       <div className="glass-panel custom-scroll relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[2rem] p-5 sm:rounded-[3rem] sm:p-10">
-        <button onClick={onClose} className="absolute right-5 top-5 text-zinc-500 hover:text-white sm:right-8 sm:top-8">
+        <button onClick={handleClose} className="absolute right-5 top-5 text-zinc-500 hover:text-white sm:right-8 sm:top-8">
           <X size={24} />
         </button>
 

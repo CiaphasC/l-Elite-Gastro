@@ -1,26 +1,42 @@
-import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type ActiveTab =
-  | "dash"
-  | "menu"
-  | "tables"
-  | "reservations"
-  | "kitchen"
-  | "clients"
-  | "inventory"
-  | "settings";
+export const ACTIVE_TABS = [
+  "dash",
+  "menu",
+  "tables",
+  "reservations",
+  "kitchen",
+  "clients",
+  "inventory",
+  "settings",
+] as const;
 
-export type MenuCategory =
-  | "Entrantes"
-  | "Principales"
-  | "Vinos"
-  | "Cocteleria"
-  | "Postres";
+export type ActiveTab = (typeof ACTIVE_TABS)[number];
+
+export const MENU_CATEGORY_VALUES = [
+  "Entrantes",
+  "Principales",
+  "Vinos",
+  "Cocteleria",
+  "Postres",
+] as const;
+
+export type MenuCategory = (typeof MENU_CATEGORY_VALUES)[number];
 
 export type KitchenStatus = "pending" | "cooking" | "ready";
 export type KitchenModalType = "kitchen-detail" | "kitchen-serve" | null;
+export type KitchenModalActionType = Exclude<KitchenModalType, null>;
+
+export const TABLE_STATUS_VALUES = ["disponible", "ocupada", "reservada", "limpieza"] as const;
+export type TableStatus = (typeof TABLE_STATUS_VALUES)[number];
+
+export const RESERVATION_TYPE_VALUES = ["Cena", "Aniversario", "Negocios", "VIP"] as const;
+export type ReservationType = (typeof RESERVATION_TYPE_VALUES)[number];
 export type ReservationStatus = "vip" | "confirmado" | "pendiente";
+
+export type ClientTier = "Platinum" | "Gold" | "Silver" | "Bronze";
+export const SUPPORTED_CURRENCY_VALUES = ["ARS", "UYU", "COP", "MXN", "PEN", "USD"] as const;
+export type SupportedCurrencyCode = (typeof SUPPORTED_CURRENCY_VALUES)[number];
 
 export interface MenuItem {
   id: number;
@@ -38,33 +54,33 @@ export interface CartItem extends MenuItem {
 
 export interface TableInfo {
   id: number;
-  status: string;
+  status: TableStatus;
   guests: number;
 }
 
 export interface Reservation {
-  id: number;
+  id: string;
   name: string;
   time: string;
   guests: number;
-  table: number | string;
-  type: string;
-  status: ReservationStatus | string;
+  table: number | "---";
+  type: ReservationType;
+  status: ReservationStatus;
 }
 
 export interface ReservationPayload {
   name: string;
   time: string;
   guests: number;
-  type?: string;
+  type?: ReservationType;
 }
 
 export interface Client {
   id: number;
   name: string;
-  tier: string;
+  tier: ClientTier;
   visits: number;
-  spend: string;
+  spend: number;
   lastVisit: string;
   preferences: string;
 }
@@ -83,6 +99,19 @@ export interface KitchenOrder {
   notes?: string;
 }
 
+export interface ServiceContext {
+  tableLabel: string;
+  serviceTier: "VIP" | "Standard";
+}
+
+export interface DashboardSnapshot {
+  netSales: number;
+  diners: number;
+  averageTicket: number;
+  serviceTimeMinutes: number;
+  weeklyPerformance: number[];
+}
+
 export interface UIState {
   isLoading: boolean;
   showCheckout: boolean;
@@ -93,6 +122,7 @@ export interface UIState {
 
 export interface RestaurantState {
   activeTab: ActiveTab;
+  currencyCode: SupportedCurrencyCode;
   selectedCategory: MenuCategory;
   searchTerm: string;
   notifications: number;
@@ -102,6 +132,8 @@ export interface RestaurantState {
   reservations: Reservation[];
   clients: Client[];
   tables: TableInfo[];
+  serviceContext: ServiceContext;
+  dashboard: DashboardSnapshot;
   ui: UIState;
 }
 
@@ -120,6 +152,7 @@ export interface RestaurantDerived {
 export interface RestaurantActions {
   finishBoot: () => void;
   setActiveTab: (tabId: ActiveTab) => void;
+  setCurrencyCode: (currencyCode: SupportedCurrencyCode) => void;
   setSearchTerm: (searchTerm: string) => void;
   setSelectedCategory: (category: MenuCategory) => void;
   addToCart: (menuItem: MenuItem) => void;
@@ -132,7 +165,7 @@ export interface RestaurantActions {
   closeReservationModal: () => void;
   addReservation: (reservationPayload: ReservationPayload) => void;
   adjustStock: (itemId: number, delta: number) => void;
-  openKitchenModal: (modalType: Exclude<KitchenModalType, null>, orderId: string) => void;
+  openKitchenModal: (modalType: KitchenModalActionType, orderId: string) => void;
   closeKitchenModal: () => void;
   completeKitchenOrder: (orderId?: string) => void;
 }
@@ -143,17 +176,9 @@ export interface RestaurantStore {
   derived: RestaurantDerived;
 }
 
-export interface NavConfigItem {
-  id: ActiveTab;
-  label: string;
-  shortLabel: string;
-  Icon: LucideIcon;
-}
-
 export interface StatsCardProps {
   title: string;
   value: string;
   trend: string;
   icon: ReactNode;
 }
-

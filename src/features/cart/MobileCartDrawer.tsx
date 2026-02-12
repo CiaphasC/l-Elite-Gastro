@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
-import type { CartItem } from "@/types";
+import { ShoppingBag, Trash2, X } from "lucide-react";
+import type { CartItem, SupportedCurrencyCode } from "@/types";
+import CartQuantityControl from "@/features/cart/components/CartQuantityControl";
 import ModalBackdrop from "@/shared/components/ModalBackdrop";
 import { formatCurrency } from "@/shared/formatters/currency";
 
 interface MobileCartDrawerProps {
   cartItems: CartItem[];
+  currencyCode: SupportedCurrencyCode;
   itemCount: number;
   subtotal: number;
   serviceFee: number;
@@ -17,6 +19,7 @@ interface MobileCartDrawerProps {
 
 const MobileCartDrawer = ({
   cartItems,
+  currencyCode,
   itemCount,
   subtotal,
   serviceFee,
@@ -52,13 +55,13 @@ const MobileCartDrawer = ({
                 : "cursor-not-allowed bg-white/10 text-zinc-500"
             }`}
           >
-            {formatCurrency(total)}
+            {formatCurrency(total, currencyCode)}
           </button>
         </div>
       </div>
 
       {isOpen && (
-        <ModalBackdrop>
+        <ModalBackdrop onRequestClose={() => setIsOpen(false)}>
           <div className="glass-panel flex max-h-[85vh] w-full max-w-xl flex-col rounded-[2rem] p-5">
             <div className="mb-5 flex items-center justify-between">
               <div>
@@ -85,23 +88,13 @@ const MobileCartDrawer = ({
                     <img src={item.img} className="h-14 w-14 rounded-xl object-cover" alt={item.name} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-white">{item.name}</p>
-                      <p className="text-xs text-[#E5C07B]">{formatCurrency(item.price)}</p>
+                      <p className="text-xs text-[#E5C07B]">{formatCurrency(item.price, currencyCode)}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onUpdateQty(item.id, -1)}
-                        className="rounded-lg bg-white/10 p-1.5 text-zinc-300"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="w-5 text-center text-sm text-white">{item.qty}</span>
-                      <button
-                        onClick={() => onUpdateQty(item.id, 1)}
-                        className="rounded-lg bg-white/10 p-1.5 text-zinc-300"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
+                    <CartQuantityControl
+                      quantity={item.qty}
+                      onIncrease={() => onUpdateQty(item.id, 1)}
+                      onDecrease={() => onUpdateQty(item.id, -1)}
+                    />
                   </div>
                 ))
               )}
@@ -110,15 +103,15 @@ const MobileCartDrawer = ({
             <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
               <div className="flex justify-between text-sm text-zinc-400">
                 <span>Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
+                <span>{formatCurrency(subtotal, currencyCode)}</span>
               </div>
               <div className="flex justify-between text-sm text-zinc-400">
                 <span>Servicio</span>
-                <span>{formatCurrency(serviceFee)}</span>
+                <span>{formatCurrency(serviceFee, currencyCode)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold text-white">
                 <span>Total</span>
-                <span className="text-[#E5C07B]">{formatCurrency(total)}</span>
+                <span className="text-[#E5C07B]">{formatCurrency(total, currencyCode)}</span>
               </div>
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button

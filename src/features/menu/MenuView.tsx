@@ -1,15 +1,17 @@
 import { Plus } from "lucide-react";
 import { MENU_CATEGORIES } from "@/domain/constants";
-import type { MenuCategory, MenuItem } from "@/types";
+import type { MenuCategory, MenuItem, SupportedCurrencyCode } from "@/types";
+import { formatCurrency } from "@/shared/formatters/currency";
 
 interface MenuViewProps {
   selectedCategory: MenuCategory;
+  currencyCode: SupportedCurrencyCode;
   onSelectCategory: (category: MenuCategory) => void;
   items: MenuItem[];
   onAddToCart: (item: MenuItem) => void;
 }
 
-const MenuView = ({ selectedCategory, onSelectCategory, items, onAddToCart }: MenuViewProps) => (
+const MenuView = ({ selectedCategory, currencyCode, onSelectCategory, items, onAddToCart }: MenuViewProps) => (
   <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
     <div className="scrollbar-hide mb-6 flex gap-2 overflow-x-auto border-b border-white/5 pb-4 sm:mb-10 sm:gap-4">
       {MENU_CATEGORIES.map((category) => (
@@ -48,7 +50,9 @@ const MenuView = ({ selectedCategory, onSelectCategory, items, onAddToCart }: Me
           </div>
           <div className="mb-2 flex items-start justify-between gap-3">
             <h3 className="font-serif text-lg tracking-tight text-white sm:text-xl">{item.name}</h3>
-            <span className="font-mono text-base font-bold text-[#E5C07B] sm:text-lg">${item.price}</span>
+            <span className="font-mono text-base font-bold text-[#E5C07B] sm:text-lg">
+              {formatCurrency(item.price, currencyCode)}
+            </span>
           </div>
           <p className="text-xs italic text-zinc-500">Ingredientes seleccionados de origen.</p>
         </div>

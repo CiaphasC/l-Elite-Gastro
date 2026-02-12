@@ -1,30 +1,15 @@
-import type { ActiveTab } from "@/types";
+import {
+  MENU_CATEGORY_VALUES,
+  RESERVATION_TYPE_VALUES,
+  type ActiveTab,
+  type MenuCategory,
+  type ReservationType,
+} from "@/types";
 
 export const INITIAL_ACTIVE_TAB: ActiveTab = "menu";
 export const APP_BRAND_NAME = "L'Élite Gastro";
 
-export const MENU_CATEGORIES = [
-  "Entrantes",
-  "Principales",
-  "Vinos",
-  "Cocteleria",
-  "Postres",
-] as const;
+export const MENU_CATEGORIES: readonly MenuCategory[] = MENU_CATEGORY_VALUES;
 
-export const RESERVATION_TYPES = ["Cena", "Aniversario", "Negocios", "VIP"] as const;
-
-export const TABS_WITH_SEARCH = new Set<ActiveTab>(["menu", "inventory", "clients"]);
-
-export const TAB_TITLES = {
-  dash: "Resumen Ejecutivo",
-  menu: "Carta de Autor",
-  tables: "Gestion de Sala",
-  reservations: "Agenda de Reservas",
-  kitchen: "Pase de Cocina",
-  clients: "Cartera de Clientes",
-  inventory: "Control de Bodega",
-  settings: "Configuracion",
-} satisfies Record<ActiveTab, string>;
-
-export type ReservationType = (typeof RESERVATION_TYPES)[number];
+export const RESERVATION_TYPES: readonly ReservationType[] = RESERVATION_TYPE_VALUES;
 

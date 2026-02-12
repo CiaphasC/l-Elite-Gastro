@@ -1,14 +1,20 @@
 import { INITIAL_ACTIVE_TAB, MENU_CATEGORIES } from "@/domain/constants";
+import { DEFAULT_CURRENCY_CODE } from "@/domain/currency";
 import {
   CLIENTS,
+  INITIAL_DASHBOARD_SNAPSHOT,
   INITIAL_KITCHEN_ORDERS,
   INITIAL_MENU_ITEMS,
   INITIAL_RESERVATIONS,
+  INITIAL_SERVICE_CONTEXT,
   TABLES,
 } from "@/domain/mockData";
+import { selectCartTotal } from "@/domain/selectors";
 import {
   addItemToCart,
+  applyCheckoutToInventory,
   appendReservation,
+  reconcileCartWithInventory,
   removeKitchenOrder,
   updateCartItemQty,
   updateInventoryStock,
@@ -20,12 +26,14 @@ import type {
   MenuItem,
   ReservationPayload,
   RestaurantState,
+  SupportedCurrencyCode,
   UIState,
 } from "@/types";
 
 export const ACTIONS = Object.freeze({
   BOOT_COMPLETED: "BOOT_COMPLETED",
   SET_ACTIVE_TAB: "SET_ACTIVE_TAB",
+  SET_CURRENCY_CODE: "SET_CURRENCY_CODE",
   SET_SEARCH_TERM: "SET_SEARCH_TERM",
   SET_SELECTED_CATEGORY: "SET_SELECTED_CATEGORY",
   ADD_TO_CART: "ADD_TO_CART",
@@ -44,6 +52,7 @@ export const ACTIONS = Object.freeze({
 type RestaurantAction =
   | { type: typeof ACTIONS.BOOT_COMPLETED }
   | { type: typeof ACTIONS.SET_ACTIVE_TAB; payload: ActiveTab }
+  | { type: typeof ACTIONS.SET_CURRENCY_CODE; payload: SupportedCurrencyCode }
   | { type: typeof ACTIONS.SET_SEARCH_TERM; payload: string }
   | { type: typeof ACTIONS.SET_SELECTED_CATEGORY; payload: MenuCategory }
   | { type: typeof ACTIONS.ADD_TO_CART; payload: MenuItem }
@@ -66,6 +75,7 @@ type RestaurantAction =
 
 export const createInitialState = (): RestaurantState => ({
   activeTab: INITIAL_ACTIVE_TAB,
+  currencyCode: DEFAULT_CURRENCY_CODE,
   selectedCategory: MENU_CATEGORIES[0],
   searchTerm: "",
   notifications: 3,
@@ -75,6 +85,8 @@ export const createInitialState = (): RestaurantState => ({
   reservations: INITIAL_RESERVATIONS,
   clients: CLIENTS,
   tables: TABLES,
+  serviceContext: INITIAL_SERVICE_CONTEXT,
+  dashboard: INITIAL_DASHBOARD_SNAPSHOT,
   ui: {
     isLoading: true,
     showCheckout: false,
@@ -108,6 +120,12 @@ export const restaurantReducer = (
         searchTerm: "",
       };
 
+    case ACTIONS.SET_CURRENCY_CODE:
+      return {
+        ...state,
+        currencyCode: action.payload,
+      };
+
     case ACTIONS.SET_SEARCH_TERM:
       return {
         ...state,
@@ -121,17 +139,9 @@ export const restaurantReducer = (
       };
 
     case ACTIONS.ADD_TO_CART: {
-      const item = action.payload;
-      const inventoryItem = state.inventory.find(
-        (inventoryLine: MenuItem) => inventoryLine.id === item.id
-      );
-      if (!inventoryItem || inventoryItem.stock === 0) {
-        return state;
-      }
-
       return {
         ...state,
-        cart: addItemToCart(state.cart, item),
+        cart: addItemToCart(state.cart, action.payload, state.inventory),
       };
     }
 
@@ -140,6 +150,7 @@ export const restaurantReducer = (
         ...state,
         cart: updateCartItemQty(
           state.cart,
+          state.inventory,
           action.payload.itemId,
           action.payload.delta
         ),
@@ -157,12 +168,28 @@ export const restaurantReducer = (
         ui: { ...state.ui, showCheckout: action.payload },
       };
 
-    case ACTIONS.CONFIRM_CHECKOUT:
+    case ACTIONS.CONFIRM_CHECKOUT: {
+      if (state.cart.length === 0) {
+        return {
+          ...state,
+          ui: { ...state.ui, showCheckout: false },
+        };
+      }
+
+      const checkoutTotal = selectCartTotal(state);
+      const nextInventory = applyCheckoutToInventory(state.inventory, state.cart);
+
       return {
         ...state,
+        inventory: nextInventory,
         cart: [],
+        dashboard: {
+          ...state.dashboard,
+          netSales: state.dashboard.netSales + checkoutTotal,
+        },
         ui: { ...state.ui, showCheckout: false },
       };
+    }
 
     case ACTIONS.SET_RESERVATION_MODAL_OPEN:
       return {
@@ -177,15 +204,19 @@ export const restaurantReducer = (
         ui: { ...state.ui, showReservationModal: false },
       };
 
-    case ACTIONS.ADJUST_STOCK:
+    case ACTIONS.ADJUST_STOCK: {
+      const nextInventory = updateInventoryStock(
+        state.inventory,
+        action.payload.itemId,
+        action.payload.delta
+      );
+
       return {
         ...state,
-        inventory: updateInventoryStock(
-          state.inventory,
-          action.payload.itemId,
-          action.payload.delta
-        ),
+        inventory: nextInventory,
+        cart: reconcileCartWithInventory(state.cart, nextInventory),
       };
+    }
 
     case ACTIONS.OPEN_KITCHEN_MODAL:
       return {

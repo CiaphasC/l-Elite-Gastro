@@ -1,18 +1,18 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { Bell, Search } from "lucide-react";
-import { TAB_TITLES, TABS_WITH_SEARCH } from "@/domain/constants";
-import type { ActiveTab } from "@/types";
 
 interface HeaderProps {
-  activeTab: ActiveTab;
+  title: string;
+  showSearch: boolean;
   notifications: number;
   searchTerm: string;
   onSearchTermChange: (searchTerm: string) => void;
 }
 
 const Header = ({
-  activeTab,
+  title,
+  showSearch,
   notifications,
   searchTerm,
   onSearchTermChange,
@@ -36,7 +36,7 @@ const Header = ({
         ease: "power2.out",
       }
     );
-  }, [activeTab]);
+  }, [title]);
 
   return (
     <header className="sticky top-0 z-30 mb-6 border-b border-white/5 bg-[#050505]/90 py-4 backdrop-blur-md lg:-mt-4 lg:mb-12">
@@ -53,12 +53,12 @@ const Header = ({
               ref={titleRef}
               className="font-serif text-2xl tracking-tight text-white sm:text-3xl lg:text-4xl"
             >
-              {TAB_TITLES[activeTab]}
+              {title}
             </h1>
           </div>
 
           <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
-            {TABS_WITH_SEARCH.has(activeTab) && (
+            {showSearch && (
               <div className="group relative hidden lg:block">
                 <Search
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-[#E5C07B]"
@@ -104,7 +104,7 @@ const Header = ({
           </div>
         </div>
 
-        {TABS_WITH_SEARCH.has(activeTab) && (
+        {showSearch && (
           <div className="group relative w-full lg:hidden">
             <Search
               className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-[#E5C07B]"

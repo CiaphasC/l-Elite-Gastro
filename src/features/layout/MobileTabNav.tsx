@@ -1,7 +1,5 @@
 import type { ActiveTab } from "@/types";
-import { settingsNavItem, primaryNavItems } from "@/features/layout/navItems";
-
-const navItems = [...primaryNavItems, settingsNavItem];
+import { orderedFeatureModules } from "@/features/registry";
 
 interface MobileTabNavProps {
   activeTab: ActiveTab;
@@ -10,7 +8,7 @@ interface MobileTabNavProps {
 
 const MobileTabNav = ({ activeTab, onTabChange }: MobileTabNavProps) => (
   <div className="scrollbar-hide mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-[#080808]/70 p-2 lg:hidden">
-    {navItems.map(({ id, shortLabel, Icon }) => (
+    {orderedFeatureModules.map(({ id, shortLabel, Icon }) => (
       <button
         key={id}
         onClick={() => onTabChange(id)}

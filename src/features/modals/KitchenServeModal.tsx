@@ -14,7 +14,7 @@ const KitchenServeModal = ({ order, onClose, onConfirm }: KitchenServeModalProps
   }
 
   return (
-    <ModalBackdrop>
+    <ModalBackdrop onRequestClose={onClose}>
       <div className="glass-panel w-full max-w-md rounded-[2rem] border border-emerald-500/20 p-6 text-center sm:rounded-[2.5rem] sm:p-12">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 sm:mb-6 sm:h-20 sm:w-20">
           <ChefHat size={32} />

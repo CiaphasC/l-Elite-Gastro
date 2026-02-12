@@ -1,7 +1,7 @@
 import { LogOut, UtensilsCrossed } from "lucide-react";
 import type { ActiveTab } from "@/types";
 import NavItem from "@/shared/components/NavItem";
-import { primaryNavItems, settingsNavItem } from "@/features/layout/navItems";
+import { primaryNavigationModules, settingsNavigationModule } from "@/features/registry";
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -15,23 +15,23 @@ const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => (
     </div>
 
     <nav className="flex w-full flex-col gap-3 px-4">
-      {primaryNavItems.map(({ id, label, Icon }) => (
+      {primaryNavigationModules.map(({ id, navLabel, Icon }) => (
         <NavItem
           key={id}
           icon={<Icon size={20} />}
           isActive={activeTab === id}
           onClick={() => onTabChange(id)}
-          tooltip={label}
+          tooltip={navLabel}
         />
       ))}
     </nav>
 
     <div className="mt-auto flex w-full flex-col gap-4 px-4">
       <NavItem
-        icon={<settingsNavItem.Icon size={20} />}
-        isActive={activeTab === settingsNavItem.id}
-        onClick={() => onTabChange(settingsNavItem.id)}
-        tooltip={settingsNavItem.label}
+        icon={<settingsNavigationModule.Icon size={20} />}
+        isActive={activeTab === settingsNavigationModule.id}
+        onClick={() => onTabChange(settingsNavigationModule.id)}
+        tooltip={settingsNavigationModule.navLabel}
       />
       <button className="flex h-12 w-12 items-center justify-center rounded-xl text-red-400/60 transition-all hover:bg-red-500/10 hover:text-red-400">
         <LogOut size={20} />

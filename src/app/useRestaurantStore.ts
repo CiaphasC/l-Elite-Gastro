@@ -13,12 +13,14 @@ import {
 import { ACTIONS, createInitialState, restaurantReducer } from "@/state/restaurantReducer";
 import type {
   ActiveTab,
+  KitchenModalActionType,
   MenuCategory,
   MenuItem,
   ReservationPayload,
   RestaurantActions,
   RestaurantDerived,
   RestaurantStore,
+  SupportedCurrencyCode,
 } from "@/types";
 
 export const useRestaurantStore = (): RestaurantStore => {
@@ -33,6 +35,8 @@ export const useRestaurantStore = (): RestaurantStore => {
       finishBoot: () => dispatch({ type: ACTIONS.BOOT_COMPLETED }),
       setActiveTab: (tabId: ActiveTab) =>
         dispatch({ type: ACTIONS.SET_ACTIVE_TAB, payload: tabId }),
+      setCurrencyCode: (currencyCode: SupportedCurrencyCode) =>
+        dispatch({ type: ACTIONS.SET_CURRENCY_CODE, payload: currencyCode }),
       setSearchTerm: (searchTerm: string) =>
         dispatch({ type: ACTIONS.SET_SEARCH_TERM, payload: searchTerm }),
       setSelectedCategory: (category: MenuCategory) =>
@@ -70,7 +74,7 @@ export const useRestaurantStore = (): RestaurantStore => {
           type: ACTIONS.ADJUST_STOCK,
           payload: { itemId, delta },
         }),
-      openKitchenModal: (modalType: "kitchen-detail" | "kitchen-serve", orderId: string) =>
+      openKitchenModal: (modalType: KitchenModalActionType, orderId: string) =>
         dispatch({
           type: ACTIONS.OPEN_KITCHEN_MODAL,
           payload: { modalType, orderId },

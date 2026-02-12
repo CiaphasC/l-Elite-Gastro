@@ -1,4 +1,12 @@
-import type { Client, KitchenOrder, MenuItem, Reservation, TableInfo } from "@/types";
+import type {
+  Client,
+  DashboardSnapshot,
+  KitchenOrder,
+  MenuItem,
+  Reservation,
+  ServiceContext,
+  TableInfo,
+} from "@/types";
 
 export const INITIAL_MENU_ITEMS: MenuItem[] = [
   {
@@ -79,7 +87,7 @@ export const TABLES: TableInfo[] = [
 
 export const INITIAL_RESERVATIONS: Reservation[] = [
   {
-    id: 1,
+    id: "rsv-001",
     name: "Roberto M.",
     time: "21:00",
     guests: 2,
@@ -88,7 +96,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     status: "confirmado",
   },
   {
-    id: 2,
+    id: "rsv-002",
     name: "Familia Alarcon",
     time: "21:30",
     guests: 6,
@@ -97,7 +105,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     status: "pendiente",
   },
   {
-    id: 3,
+    id: "rsv-003",
     name: "CEO Tech Corp",
     time: "22:00",
     guests: 4,
@@ -113,7 +121,7 @@ export const CLIENTS: Client[] = [
     name: "Isabella V.",
     tier: "Platinum",
     visits: 42,
-    spend: "$12,450",
+    spend: 12450,
     lastVisit: "Ayer",
     preferences: "Mesa lejos de la entrada, alergica a mariscos.",
   },
@@ -122,7 +130,7 @@ export const CLIENTS: Client[] = [
     name: "Carlos D.",
     tier: "Gold",
     visits: 15,
-    spend: "$3,200",
+    spend: 3200,
     lastVisit: "Hace 1 semana",
     preferences: "Prefiere vino tinto Cabernet.",
   },
@@ -160,4 +168,17 @@ export const INITIAL_KITCHEN_ORDERS: KitchenOrder[] = [
     notes: "Servir todos a la vez",
   },
 ];
+
+export const INITIAL_SERVICE_CONTEXT: ServiceContext = {
+  tableLabel: "Mesa 102",
+  serviceTier: "VIP",
+};
+
+export const INITIAL_DASHBOARD_SNAPSHOT: DashboardSnapshot = {
+  netSales: 4820,
+  diners: 84,
+  averageTicket: 157,
+  serviceTimeMinutes: 14,
+  weeklyPerformance: [45, 72, 48, 95, 68, 88, 100],
+};
 

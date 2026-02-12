@@ -1,12 +1,15 @@
-import { CheckCircle2, Minus, Plus, Trash2, Wine } from "lucide-react";
-import type { CartItem } from "@/types";
+import { CheckCircle2, Trash2, Wine } from "lucide-react";
+import type { CartItem, ServiceContext, SupportedCurrencyCode } from "@/types";
+import CartQuantityControl from "@/features/cart/components/CartQuantityControl";
 import { formatCurrency } from "@/shared/formatters/currency";
 
 interface CartPanelProps {
   cartItems: CartItem[];
+  currencyCode: SupportedCurrencyCode;
   subtotal: number;
   serviceFee: number;
   total: number;
+  serviceContext: ServiceContext;
   onClearCart: () => void;
   onUpdateQty: (itemId: number, delta: number) => void;
   onOpenCheckout: () => void;
@@ -14,9 +17,11 @@ interface CartPanelProps {
 
 const CartPanel = ({
   cartItems,
+  currencyCode,
   subtotal,
   serviceFee,
   total,
+  serviceContext,
   onClearCart,
   onUpdateQty,
   onOpenCheckout,
@@ -29,7 +34,8 @@ const CartPanel = ({
         <div>
           <h2 className="font-serif text-3xl tracking-tight text-white">Comanda Actual</h2>
           <div className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-            Mesa 102 <span>•</span> <span className="text-[#E5C07B]">VIP Service</span>
+            {serviceContext.tableLabel} <span>•</span>{" "}
+            <span className="text-[#E5C07B]">{serviceContext.serviceTier} Service</span>
           </div>
         </div>
         <button
@@ -57,23 +63,16 @@ const CartPanel = ({
               </div>
               <div className="flex-1">
                 <h4 className="mb-1 text-sm font-medium leading-tight text-white">{item.name}</h4>
-                <p className="font-mono text-xs font-bold text-[#E5C07B]">{formatCurrency(item.price)}</p>
+                <p className="font-mono text-xs font-bold text-[#E5C07B]">
+                  {formatCurrency(item.price, currencyCode)}
+                </p>
               </div>
-              <div className="flex flex-col items-center gap-2 rounded-lg border border-white/5 bg-black/40 p-1.5">
-                <button
-                  onClick={() => onUpdateQty(item.id, 1)}
-                  className="p-1 transition-colors hover:text-[#E5C07B]"
-                >
-                  <Plus size={12} />
-                </button>
-                <span className="w-5 text-center font-mono text-xs text-white">{item.qty}</span>
-                <button
-                  onClick={() => onUpdateQty(item.id, -1)}
-                  className="p-1 transition-colors hover:text-[#E5C07B]"
-                >
-                  <Minus size={12} />
-                </button>
-              </div>
+              <CartQuantityControl
+                variant="vertical"
+                quantity={item.qty}
+                onIncrease={() => onUpdateQty(item.id, 1)}
+                onDecrease={() => onUpdateQty(item.id, -1)}
+              />
             </div>
           ))
         )}
@@ -84,15 +83,15 @@ const CartPanel = ({
       <div className="mb-8 space-y-4">
         <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
           <span>Subtotal</span>
-          <span className="font-mono text-zinc-300">{formatCurrency(subtotal)}</span>
+          <span className="font-mono text-zinc-300">{formatCurrency(subtotal, currencyCode)}</span>
         </div>
         <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
           <span>Servicio (10%)</span>
-          <span className="font-mono text-zinc-300">{formatCurrency(serviceFee)}</span>
+          <span className="font-mono text-zinc-300">{formatCurrency(serviceFee, currencyCode)}</span>
         </div>
         <div className="flex justify-between border-t border-white/10 pt-6 font-serif text-3xl text-white">
           <span>Total</span>
-          <span className="font-mono tracking-tighter text-[#E5C07B]">{formatCurrency(total)}</span>
+          <span className="font-mono tracking-tighter text-[#E5C07B]">{formatCurrency(total, currencyCode)}</span>
         </div>
       </div>
 

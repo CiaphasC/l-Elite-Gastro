@@ -1,9 +1,9 @@
 import { AlertTriangle, ChefHat } from "lucide-react";
-import type { KitchenOrder } from "@/types";
+import type { KitchenModalActionType, KitchenOrder } from "@/types";
 
 interface KitchenViewProps {
   orders: KitchenOrder[];
-  onOpenKitchenModal: (modalType: "kitchen-serve" | "kitchen-detail", orderId: string) => void;
+  onOpenKitchenModal: (modalType: KitchenModalActionType, orderId: string) => void;
 }
 
 const KitchenView = ({ orders, onOpenKitchenModal }: KitchenViewProps) => (
