@@ -75,4 +75,46 @@ describe("restaurantReducer", () => {
     const nextState = runAction({ type: ACTIONS.SET_CURRENCY_CODE, payload: "MXN" });
     expect(nextState.currencyCode).toBe("MXN");
   });
+
+  it("creates reservations with optional table assignment and reserves the table", () => {
+    const state = createInitialState();
+
+    const nextState = restaurantReducer(state, {
+      type: ACTIONS.ADD_RESERVATION,
+      payload: {
+        name: "Familia Nova",
+        time: "20:45",
+        guests: 3,
+        type: "Cena",
+        table: 104,
+      },
+    } as never);
+
+    const createdReservation = nextState.reservations[nextState.reservations.length - 1];
+    expect(createdReservation?.table).toBe(104);
+    expect(nextState.tables.find((table) => table.id === 104)?.status).toBe("reservada");
+    expect(nextState.tables.find((table) => table.id === 104)?.guests).toBe(3);
+    expect(nextState.ui.showReservationModal).toBe(false);
+  });
+
+  it("reassigns reservation table and syncs both table states", () => {
+    const state = createInitialState();
+
+    const nextState = restaurantReducer(state, {
+      type: ACTIONS.ASSIGN_RESERVATION_TABLE,
+      payload: {
+        reservationId: "rsv-001",
+        tableId: 104,
+      },
+    } as never);
+
+    const updatedReservation = nextState.reservations.find(
+      (reservation) => reservation.id === "rsv-001"
+    );
+
+    expect(updatedReservation?.table).toBe(104);
+    expect(updatedReservation?.status).toBe("confirmado");
+    expect(nextState.tables.find((table) => table.id === 103)?.status).toBe("disponible");
+    expect(nextState.tables.find((table) => table.id === 104)?.status).toBe("reservada");
+  });
 });

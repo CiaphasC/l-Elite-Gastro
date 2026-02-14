@@ -1,6 +1,7 @@
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { formatCurrency } from "@/shared/formatters/currency";
 import ModalBackdrop from "@/shared/components/ModalBackdrop";
+import ModalPanel from "@/shared/components/ModalPanel";
 import type { SupportedCurrencyCode } from "@/types";
 
 interface CheckoutModalProps {
@@ -18,14 +19,13 @@ const CheckoutModal = ({ isOpen, currencyCode, total, onClose, onConfirm }: Chec
 
   return (
     <ModalBackdrop onRequestClose={onClose}>
-      <div className="glass-panel custom-scroll animate-in zoom-in relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[2rem] p-6 text-center duration-500 sm:rounded-[3rem] sm:p-16">
-        <button
-          onClick={onClose}
-          className="absolute right-5 top-5 rounded-full border border-white/10 p-2 text-zinc-500 transition-colors hover:text-white sm:right-8 sm:top-8"
-          aria-label="Cerrar modal de checkout"
-        >
-          <X size={16} />
-        </button>
+      <ModalPanel
+        className="glass-panel custom-scroll animate-in zoom-in relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[2rem] p-6 text-center duration-500 sm:rounded-[3rem] sm:p-16"
+        onClose={onClose}
+        closeButtonClassName="absolute right-5 top-5 rounded-full border border-white/10 p-2 text-zinc-500 transition-colors hover:text-white sm:right-8 sm:top-8"
+        closeIconSize={16}
+        closeAriaLabel="Cerrar modal de checkout"
+      >
         <div className="absolute left-0 top-0 h-2 w-full bg-gradient-to-r from-transparent via-[#E5C07B] to-transparent" />
 
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-[#E5C07B]/20 bg-[#E5C07B]/10 text-[#E5C07B] shadow-[0_0_50px_rgba(229,192,123,0.15)] sm:mb-10 sm:h-24 sm:w-24">
@@ -53,7 +53,7 @@ const CheckoutModal = ({ isOpen, currencyCode, total, onClose, onConfirm }: Chec
             Confirmar y Cerrar
           </button>
         </div>
-      </div>
+      </ModalPanel>
     </ModalBackdrop>
   );
 };

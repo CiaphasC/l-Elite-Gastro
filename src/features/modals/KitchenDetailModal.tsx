@@ -1,6 +1,6 @@
-import { X } from "lucide-react";
 import type { KitchenOrder } from "@/types";
 import ModalBackdrop from "@/shared/components/ModalBackdrop";
+import ModalPanel from "@/shared/components/ModalPanel";
 
 interface KitchenDetailModalProps {
   order: KitchenOrder | null;
@@ -15,11 +15,12 @@ const KitchenDetailModal = ({ order, onClose, onMarkToServe }: KitchenDetailModa
 
   return (
     <ModalBackdrop onRequestClose={onClose}>
-      <div className="glass-panel custom-scroll relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] p-5 sm:rounded-[2.5rem] sm:p-10">
-        <button onClick={onClose} className="absolute right-5 top-5 text-zinc-500 hover:text-white sm:right-6 sm:top-6">
-          <X size={24} />
-        </button>
-
+      <ModalPanel
+        className="glass-panel custom-scroll relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] p-5 sm:rounded-[2.5rem] sm:p-10"
+        onClose={onClose}
+        closeButtonClassName="absolute right-5 top-5 text-zinc-500 transition-colors hover:text-white sm:right-6 sm:top-6"
+        closeAriaLabel="Cerrar detalle de cocina"
+      >
         <div className="mb-6 flex flex-col gap-4 pr-10 sm:mb-8 sm:flex-row sm:items-start sm:justify-between sm:pr-0">
           <div>
             <h3 className="font-serif text-2xl text-white sm:text-3xl">Mesa {order.id}</h3>
@@ -64,7 +65,7 @@ const KitchenDetailModal = ({ order, onClose, onMarkToServe }: KitchenDetailModa
             Marcar para Servir
           </button>
         </div>
-      </div>
+      </ModalPanel>
     </ModalBackdrop>
   );
 };

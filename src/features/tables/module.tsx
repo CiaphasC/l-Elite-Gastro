@@ -9,5 +9,5 @@ export const tablesFeatureModule: FeatureModule = {
   shortLabel: "Salon",
   searchEnabled: false,
   Icon: Grid2X2,
-  render: ({ state }) => <TablesView tables={state.tables} />,
+  render: ({ state }) => <TablesView tables={state.tables} reservations={state.reservations} />,
 };

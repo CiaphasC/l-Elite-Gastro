@@ -3,7 +3,9 @@ import type {
   KitchenOrder,
   MenuItem,
   Reservation,
+  ReservationTable,
   ReservationPayload,
+  TableInfo,
 } from "@/types";
 
 const clampAtZero = (value: number): number => Math.max(0, value);
@@ -12,6 +14,27 @@ const clampInRange = (value: number, min: number, max: number): number =>
 
 const getInventoryStock = (inventory: MenuItem[], itemId: number): number =>
   inventory.find((item) => item.id === itemId)?.stock ?? 0;
+
+const normalizeReservationTable = (
+  table: ReservationPayload["table"] | number
+): ReservationTable => {
+  if (table === "---") {
+    return table;
+  }
+
+  if (typeof table !== "number" || !Number.isFinite(table)) {
+    return "---";
+  }
+
+  return Math.max(1, Math.trunc(table));
+};
+
+const isTableReserved = (table: TableInfo): boolean => table.status === "reservada";
+const isTableAvailable = (table: TableInfo): boolean => table.status === "disponible";
+
+const resolveStatusOnTableAssignment = (
+  status: Reservation["status"]
+): Reservation["status"] => (status === "vip" ? "vip" : "confirmado");
 
 const createReservationId = (): string => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -116,18 +139,135 @@ export const appendReservation = (
   const normalizedGuests = Number.isFinite(reservationPayload.guests)
     ? Math.max(1, Math.trunc(reservationPayload.guests))
     : 1;
+  const normalizedTable = normalizeReservationTable(reservationPayload.table);
 
   const reservation: Reservation = {
     id: createReservationId(),
     name: reservationPayload.name.trim(),
     time: reservationPayload.time,
     guests: normalizedGuests,
-    table: "---",
+    table: normalizedTable,
     type: reservationPayload.type || "Cena",
     status: "pendiente",
   };
 
   return [...reservations, reservation];
+};
+
+export interface ReservationTableMutationResult {
+  reservations: Reservation[];
+  tables: TableInfo[];
+}
+
+export const appendReservationWithTableAssignment = (
+  reservations: Reservation[],
+  tables: TableInfo[],
+  reservationPayload: ReservationPayload
+): ReservationTableMutationResult => {
+  const requestedTableId = normalizeReservationTable(reservationPayload.table);
+
+  const requestedTable =
+    typeof requestedTableId === "number"
+      ? tables.find((table) => table.id === requestedTableId)
+      : undefined;
+
+  const canReserveRequestedTable = Boolean(requestedTable && isTableAvailable(requestedTable));
+
+  const nextReservationPayload: ReservationPayload = {
+    ...reservationPayload,
+    table:
+      canReserveRequestedTable && typeof requestedTableId === "number"
+        ? requestedTableId
+        : "---",
+  };
+
+  const nextReservations = appendReservation(reservations, nextReservationPayload);
+  const createdReservation = nextReservations[nextReservations.length - 1];
+
+  if (!createdReservation || typeof createdReservation.table !== "number") {
+    return {
+      reservations: nextReservations,
+      tables,
+    };
+  }
+
+  const nextTables: TableInfo[] = tables.map((table): TableInfo =>
+    table.id === createdReservation.table
+      ? { ...table, status: "reservada", guests: createdReservation.guests }
+      : table
+  );
+
+  return {
+    reservations: nextReservations,
+    tables: nextTables,
+  };
+};
+
+export const assignTableToReservation = (
+  reservations: Reservation[],
+  tables: TableInfo[],
+  reservationId: string,
+  nextTableId: number
+): ReservationTableMutationResult => {
+  const reservation = reservations.find(
+    (reservationItem) => reservationItem.id === reservationId
+  );
+
+  if (!reservation) {
+    return { reservations, tables };
+  }
+
+  const normalizedNextTableId = normalizeReservationTable(nextTableId);
+  if (normalizedNextTableId === "---") {
+    return { reservations, tables };
+  }
+
+  const targetTable = tables.find((table) => table.id === normalizedNextTableId);
+  if (!targetTable) {
+    return { reservations, tables };
+  }
+
+  const currentTableId = reservation.table;
+  const isSameTable =
+    typeof currentTableId === "number" && currentTableId === normalizedNextTableId;
+
+  if (!isSameTable && !isTableAvailable(targetTable)) {
+    return { reservations, tables };
+  }
+
+  const nextReservations = reservations.map((reservationItem) => {
+    if (reservationItem.id !== reservationId) {
+      return reservationItem;
+    }
+
+    return {
+      ...reservationItem,
+      table: normalizedNextTableId,
+      status: resolveStatusOnTableAssignment(reservationItem.status),
+    };
+  });
+
+  const nextTables: TableInfo[] = tables.map((table): TableInfo => {
+    if (
+      typeof currentTableId === "number" &&
+      currentTableId !== normalizedNextTableId &&
+      table.id === currentTableId &&
+      isTableReserved(table)
+    ) {
+      return { ...table, status: "disponible", guests: 0 };
+    }
+
+    if (table.id === normalizedNextTableId) {
+      return { ...table, status: "reservada", guests: reservation.guests };
+    }
+
+    return table;
+  });
+
+  return {
+    reservations: nextReservations,
+    tables: nextTables,
+  };
 };
 
 export const removeKitchenOrder = (

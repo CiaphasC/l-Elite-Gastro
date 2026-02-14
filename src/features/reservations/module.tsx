@@ -12,7 +12,9 @@ export const reservationsFeatureModule: FeatureModule = {
   render: ({ state, actions }) => (
     <ReservationsView
       reservations={state.reservations}
+      tables={state.tables}
       onOpenNewReservation={actions.openReservationModal}
+      onAssignTable={actions.assignReservationTable}
     />
   ),
 };

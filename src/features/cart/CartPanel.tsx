@@ -1,7 +1,7 @@
 import { CheckCircle2, Trash2, Wine } from "lucide-react";
 import type { CartItem, ServiceContext, SupportedCurrencyCode } from "@/types";
-import CartQuantityControl from "@/features/cart/components/CartQuantityControl";
-import { formatCurrency } from "@/shared/formatters/currency";
+import CartItemLine from "@/features/cart/components/CartItemLine";
+import CartTotalsSummary from "@/features/cart/components/CartTotalsSummary";
 
 interface CartPanelProps {
   cartItems: CartItem[];
@@ -54,46 +54,26 @@ const CartPanel = ({
           </div>
         ) : (
           cartItems.map((item) => (
-            <div
+            <CartItemLine
               key={item.id}
-              className="flex items-center gap-5 rounded-2xl border border-white/5 bg-white/5 p-3 animate-in slide-in-from-right duration-300"
-            >
-              <div className="relative h-16 w-16 overflow-hidden rounded-xl bg-black">
-                <img src={item.img} className="h-full w-full object-cover opacity-80" alt={item.name} />
-              </div>
-              <div className="flex-1">
-                <h4 className="mb-1 text-sm font-medium leading-tight text-white">{item.name}</h4>
-                <p className="font-mono text-xs font-bold text-[#E5C07B]">
-                  {formatCurrency(item.price, currencyCode)}
-                </p>
-              </div>
-              <CartQuantityControl
-                variant="vertical"
-                quantity={item.qty}
-                onIncrease={() => onUpdateQty(item.id, 1)}
-                onDecrease={() => onUpdateQty(item.id, -1)}
-              />
-            </div>
+              item={item}
+              currencyCode={currencyCode}
+              variant="desktop"
+              onUpdateQty={onUpdateQty}
+            />
           ))
         )}
       </div>
     </div>
 
     <div className="relative z-20 border-t border-white/10 bg-[#0A0A0A]/90 p-10 backdrop-blur-xl">
-      <div className="mb-8 space-y-4">
-        <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-          <span>Subtotal</span>
-          <span className="font-mono text-zinc-300">{formatCurrency(subtotal, currencyCode)}</span>
-        </div>
-        <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-          <span>Servicio (10%)</span>
-          <span className="font-mono text-zinc-300">{formatCurrency(serviceFee, currencyCode)}</span>
-        </div>
-        <div className="flex justify-between border-t border-white/10 pt-6 font-serif text-3xl text-white">
-          <span>Total</span>
-          <span className="font-mono tracking-tighter text-[#E5C07B]">{formatCurrency(total, currencyCode)}</span>
-        </div>
-      </div>
+      <CartTotalsSummary
+        subtotal={subtotal}
+        serviceFee={serviceFee}
+        total={total}
+        currencyCode={currencyCode}
+        variant="desktop"
+      />
 
       <button
         onClick={onOpenCheckout}

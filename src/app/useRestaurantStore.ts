@@ -69,6 +69,11 @@ export const useRestaurantStore = (): RestaurantStore => {
           type: ACTIONS.ADD_RESERVATION,
           payload: reservationPayload,
         }),
+      assignReservationTable: (reservationId: string, tableId: number) =>
+        dispatch({
+          type: ACTIONS.ASSIGN_RESERVATION_TABLE,
+          payload: { reservationId, tableId },
+        }),
       adjustStock: (itemId: number, delta: number) =>
         dispatch({
           type: ACTIONS.ADJUST_STOCK,

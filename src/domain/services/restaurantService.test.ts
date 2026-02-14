@@ -2,11 +2,13 @@ import {
   addItemToCart,
   applyCheckoutToInventory,
   appendReservation,
+  appendReservationWithTableAssignment,
+  assignTableToReservation,
   reconcileCartWithInventory,
   updateCartItemQty,
 } from "@/domain/services/restaurantService";
 import { describe, expect, it } from "vitest";
-import type { CartItem, MenuItem } from "@/types";
+import type { CartItem, MenuItem, Reservation, TableInfo } from "@/types";
 
 const inventory: MenuItem[] = [
   {
@@ -82,5 +84,67 @@ describe("appendReservation", () => {
     expect(typeof first.id).toBe("string");
     expect(first.id.length).toBeGreaterThan(0);
     expect(first.id).not.toBe(second.id);
+  });
+});
+
+describe("reservation table assignment", () => {
+  const reservationTables: TableInfo[] = [
+    { id: 11, status: "disponible", guests: 0 },
+    { id: 12, status: "reservada", guests: 2 },
+    { id: 13, status: "disponible", guests: 0 },
+    { id: 14, status: "reservada", guests: 5 },
+  ];
+
+  const baseReservations: Reservation[] = [
+    {
+      id: "rsv-a",
+      name: "Cliente A",
+      time: "20:00",
+      guests: 2,
+      table: 12,
+      type: "Cena",
+      status: "pendiente",
+    },
+  ];
+
+  it("creates a reservation and reserves the selected available table", () => {
+    const result = appendReservationWithTableAssignment([], reservationTables, {
+      name: "Mesa Nova",
+      guests: 4,
+      time: "21:00",
+      type: "Negocios",
+      table: 11,
+    });
+
+    expect(result.reservations).toHaveLength(1);
+    expect(result.reservations[0]?.table).toBe(11);
+    expect(result.tables.find((table) => table.id === 11)?.status).toBe("reservada");
+    expect(result.tables.find((table) => table.id === 11)?.guests).toBe(4);
+  });
+
+  it("reassigns reservation table and syncs table availability", () => {
+    const result = assignTableToReservation(
+      baseReservations,
+      reservationTables,
+      "rsv-a",
+      13
+    );
+
+    expect(result.reservations[0]?.table).toBe(13);
+    expect(result.reservations[0]?.status).toBe("confirmado");
+    expect(result.tables.find((table) => table.id === 12)?.status).toBe("disponible");
+    expect(result.tables.find((table) => table.id === 13)?.status).toBe("reservada");
+  });
+
+  it("does not reassign reservation to a non-available table", () => {
+    const result = assignTableToReservation(
+      baseReservations,
+      reservationTables,
+      "rsv-a",
+      14
+    );
+
+    expect(result.reservations).toEqual(baseReservations);
+    expect(result.tables).toEqual(reservationTables);
   });
 });

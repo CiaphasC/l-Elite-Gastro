@@ -13,7 +13,8 @@ import { selectCartTotal } from "@/domain/selectors";
 import {
   addItemToCart,
   applyCheckoutToInventory,
-  appendReservation,
+  appendReservationWithTableAssignment,
+  assignTableToReservation,
   reconcileCartWithInventory,
   removeKitchenOrder,
   updateCartItemQty,
@@ -43,6 +44,7 @@ export const ACTIONS = Object.freeze({
   CONFIRM_CHECKOUT: "CONFIRM_CHECKOUT",
   SET_RESERVATION_MODAL_OPEN: "SET_RESERVATION_MODAL_OPEN",
   ADD_RESERVATION: "ADD_RESERVATION",
+  ASSIGN_RESERVATION_TABLE: "ASSIGN_RESERVATION_TABLE",
   ADJUST_STOCK: "ADJUST_STOCK",
   OPEN_KITCHEN_MODAL: "OPEN_KITCHEN_MODAL",
   CLOSE_KITCHEN_MODAL: "CLOSE_KITCHEN_MODAL",
@@ -65,6 +67,10 @@ type RestaurantAction =
   | { type: typeof ACTIONS.CONFIRM_CHECKOUT }
   | { type: typeof ACTIONS.SET_RESERVATION_MODAL_OPEN; payload: boolean }
   | { type: typeof ACTIONS.ADD_RESERVATION; payload: ReservationPayload }
+  | {
+      type: typeof ACTIONS.ASSIGN_RESERVATION_TABLE;
+      payload: { reservationId: string; tableId: number };
+    }
   | { type: typeof ACTIONS.ADJUST_STOCK; payload: { itemId: number; delta: number } }
   | {
       type: typeof ACTIONS.OPEN_KITCHEN_MODAL;
@@ -197,12 +203,35 @@ export const restaurantReducer = (
         ui: { ...state.ui, showReservationModal: action.payload },
       };
 
-    case ACTIONS.ADD_RESERVATION:
+    case ACTIONS.ADD_RESERVATION: {
+      const reservationMutationResult = appendReservationWithTableAssignment(
+        state.reservations,
+        state.tables,
+        action.payload
+      );
+
       return {
         ...state,
-        reservations: appendReservation(state.reservations, action.payload),
+        reservations: reservationMutationResult.reservations,
+        tables: reservationMutationResult.tables,
         ui: { ...state.ui, showReservationModal: false },
       };
+    }
+
+    case ACTIONS.ASSIGN_RESERVATION_TABLE: {
+      const assignmentResult = assignTableToReservation(
+        state.reservations,
+        state.tables,
+        action.payload.reservationId,
+        action.payload.tableId
+      );
+
+      return {
+        ...state,
+        reservations: assignmentResult.reservations,
+        tables: assignmentResult.tables,
+      };
+    }
 
     case ACTIONS.ADJUST_STOCK: {
       const nextInventory = updateInventoryStock(

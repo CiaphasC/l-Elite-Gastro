@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ShoppingBag, Trash2, X } from "lucide-react";
 import type { CartItem, SupportedCurrencyCode } from "@/types";
-import CartQuantityControl from "@/features/cart/components/CartQuantityControl";
+import CartItemLine from "@/features/cart/components/CartItemLine";
+import CartTotalsSummary from "@/features/cart/components/CartTotalsSummary";
 import ModalBackdrop from "@/shared/components/ModalBackdrop";
 import { formatCurrency } from "@/shared/formatters/currency";
 
@@ -81,38 +82,25 @@ const MobileCartDrawer = ({
                 <p className="py-10 text-center text-zinc-500">No hay platos en la comanda.</p>
               ) : (
                 cartItems.map((item) => (
-                  <div
+                  <CartItemLine
                     key={item.id}
-                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"
-                  >
-                    <img src={item.img} className="h-14 w-14 rounded-xl object-cover" alt={item.name} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-white">{item.name}</p>
-                      <p className="text-xs text-[#E5C07B]">{formatCurrency(item.price, currencyCode)}</p>
-                    </div>
-                    <CartQuantityControl
-                      quantity={item.qty}
-                      onIncrease={() => onUpdateQty(item.id, 1)}
-                      onDecrease={() => onUpdateQty(item.id, -1)}
-                    />
-                  </div>
+                    item={item}
+                    currencyCode={currencyCode}
+                    variant="mobile"
+                    onUpdateQty={onUpdateQty}
+                  />
                 ))
               )}
             </div>
 
             <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
-              <div className="flex justify-between text-sm text-zinc-400">
-                <span>Subtotal</span>
-                <span>{formatCurrency(subtotal, currencyCode)}</span>
-              </div>
-              <div className="flex justify-between text-sm text-zinc-400">
-                <span>Servicio</span>
-                <span>{formatCurrency(serviceFee, currencyCode)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold text-white">
-                <span>Total</span>
-                <span className="text-[#E5C07B]">{formatCurrency(total, currencyCode)}</span>
-              </div>
+              <CartTotalsSummary
+                subtotal={subtotal}
+                serviceFee={serviceFee}
+                total={total}
+                currencyCode={currencyCode}
+                variant="mobile"
+              />
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   onClick={onClearCart}

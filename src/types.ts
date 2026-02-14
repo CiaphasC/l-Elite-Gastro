@@ -33,6 +33,7 @@ export type TableStatus = (typeof TABLE_STATUS_VALUES)[number];
 export const RESERVATION_TYPE_VALUES = ["Cena", "Aniversario", "Negocios", "VIP"] as const;
 export type ReservationType = (typeof RESERVATION_TYPE_VALUES)[number];
 export type ReservationStatus = "vip" | "confirmado" | "pendiente";
+export type ReservationTable = number | "---";
 
 export type ClientTier = "Platinum" | "Gold" | "Silver" | "Bronze";
 export const SUPPORTED_CURRENCY_VALUES = ["ARS", "UYU", "COP", "MXN", "PEN", "USD"] as const;
@@ -63,7 +64,7 @@ export interface Reservation {
   name: string;
   time: string;
   guests: number;
-  table: number | "---";
+  table: ReservationTable;
   type: ReservationType;
   status: ReservationStatus;
 }
@@ -73,6 +74,7 @@ export interface ReservationPayload {
   time: string;
   guests: number;
   type?: ReservationType;
+  table?: ReservationTable;
 }
 
 export interface Client {
@@ -164,6 +166,7 @@ export interface RestaurantActions {
   openReservationModal: () => void;
   closeReservationModal: () => void;
   addReservation: (reservationPayload: ReservationPayload) => void;
+  assignReservationTable: (reservationId: string, tableId: number) => void;
   adjustStock: (itemId: number, delta: number) => void;
   openKitchenModal: (modalType: KitchenModalActionType, orderId: string) => void;
   closeKitchenModal: () => void;

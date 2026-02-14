@@ -160,6 +160,7 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
 
       <ReservationModal
         isOpen={state.ui.showReservationModal}
+        tables={state.tables}
         onClose={actions.closeReservationModal}
         onSubmitReservation={actions.addReservation}
       />

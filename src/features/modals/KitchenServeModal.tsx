@@ -1,6 +1,7 @@
 import { ChefHat } from "lucide-react";
 import type { KitchenOrder } from "@/types";
 import ModalBackdrop from "@/shared/components/ModalBackdrop";
+import ModalPanel from "@/shared/components/ModalPanel";
 
 interface KitchenServeModalProps {
   order: KitchenOrder | null;
@@ -15,7 +16,7 @@ const KitchenServeModal = ({ order, onClose, onConfirm }: KitchenServeModalProps
 
   return (
     <ModalBackdrop onRequestClose={onClose}>
-      <div className="glass-panel w-full max-w-md rounded-[2rem] border border-emerald-500/20 p-6 text-center sm:rounded-[2.5rem] sm:p-12">
+      <ModalPanel className="glass-panel w-full max-w-md rounded-[2rem] border border-emerald-500/20 p-6 text-center sm:rounded-[2.5rem] sm:p-12">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 sm:mb-6 sm:h-20 sm:w-20">
           <ChefHat size={32} />
         </div>
@@ -38,7 +39,7 @@ const KitchenServeModal = ({ order, onClose, onConfirm }: KitchenServeModalProps
             Cancelar
           </button>
         </div>
-      </div>
+      </ModalPanel>
     </ModalBackdrop>
   );
 };

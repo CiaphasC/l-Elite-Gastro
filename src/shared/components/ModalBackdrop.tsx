@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { RefObject } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent, ReactNode } from "react";
 
 interface ModalBackdropProps {
@@ -6,6 +7,9 @@ interface ModalBackdropProps {
   onRequestClose?: () => void;
   closeOnBackdropClick?: boolean;
   closeOnEscape?: boolean;
+  backdropClassName?: string;
+  dialogClassName?: string;
+  backdropRef?: RefObject<HTMLDivElement | null>;
 }
 
 const focusableSelector =
@@ -16,8 +20,20 @@ const ModalBackdrop = ({
   onRequestClose,
   closeOnBackdropClick = true,
   closeOnEscape = true,
+  backdropClassName = "fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 backdrop-blur-md animate-in fade-in duration-300 sm:p-4",
+  dialogClassName = "",
+  backdropRef,
 }: ModalBackdropProps) => {
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const backdropInternalRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!backdropRef) {
+      return;
+    }
+
+    backdropRef.current = backdropInternalRef.current;
+  }, [backdropRef]);
 
   useEffect(() => {
     const dialogElement = dialogRef.current;
@@ -100,10 +116,18 @@ const ModalBackdrop = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 backdrop-blur-md animate-in fade-in duration-300 sm:p-4"
+      ref={backdropInternalRef}
+      className={backdropClassName}
       onMouseDown={handleBackdropMouseDown}
     >
-      <div ref={dialogRef} role="dialog" aria-modal="true" tabIndex={-1} onKeyDown={handleDialogKeyDown}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        onKeyDown={handleDialogKeyDown}
+        className={dialogClassName}
+      >
         {children}
       </div>
     </div>
