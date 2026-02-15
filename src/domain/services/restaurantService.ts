@@ -34,7 +34,20 @@ const isTableAvailable = (table: TableInfo): boolean => table.status === "dispon
 
 const resolveStatusOnTableAssignment = (
   status: Reservation["status"]
-): Reservation["status"] => (status === "vip" ? "vip" : "confirmado");
+): Reservation["status"] => {
+  if (status === "vip" || status === "vip pendiente" || status === "vip reservado") {
+    return "vip reservado";
+  }
+
+  if (status === "en curso" || status === "completado") {
+    return status;
+  }
+
+  return "confirmado";
+};
+
+export const isVipReservationStatus = (status: Reservation["status"]): boolean =>
+  status === "vip" || status === "vip pendiente" || status === "vip reservado";
 
 const createReservationId = (): string => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {

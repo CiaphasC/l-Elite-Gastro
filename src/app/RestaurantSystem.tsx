@@ -11,6 +11,11 @@ import CheckoutModal from "@/features/modals/CheckoutModal";
 import KitchenDetailModal from "@/features/modals/KitchenDetailModal";
 import KitchenServeModal from "@/features/modals/KitchenServeModal";
 import ReservationModal from "@/features/modals/ReservationModal";
+import TableConfirmationModal from "@/features/modals/TableConfirmationModal";
+import AddInventoryModal from "@/features/modals/AddInventoryModal";
+import ClientModal from "@/features/modals/ClientModal";
+import ClientDetailModal from "@/features/modals/ClientDetailModal";
+import OrderTakingInterface from "@/features/orders/OrderTakingInterface";
 
 interface RestaurantSystemProps {
   onLogout: () => void;
@@ -22,7 +27,6 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
   const isLogoutTransitionRunningRef = useRef(false);
   const { state, actions, derived } = useRestaurantStore();
 
-  // The boot flag is reused from existing store state; we close it immediately in system mode.
   useEffect(() => {
     actions.finishBoot();
   }, [actions]);
@@ -81,7 +85,14 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
   };
 
   const selectedKitchenOrder = derived.selectedKitchenOrder;
+  const selectedClient = derived.selectedClient;
   const activeFeature = featureRegistry[state.activeTab];
+  const editingClient =
+    typeof state.ui.clientModal.targetClientId === "number"
+      ? state.clients.find((client) => client.id === state.ui.clientModal.targetClientId) ?? null
+      : null;
+  const reservationModalKey = `reservation-${state.ui.showReservationModal ? JSON.stringify(state.ui.reservationPrefill ?? {}) : "closed"}`;
+  const clientModalKey = `client-${state.ui.clientModal.isOpen ? "open" : "closed"}-${state.ui.clientModal.mode}-${state.ui.clientModal.targetClientId ?? "new"}-${state.ui.clientModal.targetSegment}`;
 
   return (
     <div
@@ -103,8 +114,14 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
           title={activeFeature.title}
           showSearch={activeFeature.searchEnabled}
           notifications={state.notifications}
+          unreadNotificationsCount={derived.unreadNotificationsCount}
+          isNotificationPanelOpen={state.ui.showNotificationPanel}
           searchTerm={state.searchTerm}
           onSearchTermChange={actions.setSearchTerm}
+          onToggleNotifications={actions.toggleNotificationPanel}
+          onCloseNotifications={actions.closeNotificationPanel}
+          onClearNotifications={actions.clearNotifications}
+          onReadNotification={actions.markNotificationAsRead}
         />
         <MobileTabNav activeTab={state.activeTab} onTabChange={actions.setActiveTab} />
         {activeFeature.render({ state, actions, derived })}
@@ -159,11 +176,54 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
       />
 
       <ReservationModal
+        key={reservationModalKey}
         isOpen={state.ui.showReservationModal}
         tables={state.tables}
+        prefill={state.ui.reservationPrefill}
         onClose={actions.closeReservationModal}
         onSubmitReservation={actions.addReservation}
       />
+
+      <ClientModal
+        key={clientModalKey}
+        isOpen={state.ui.clientModal.isOpen}
+        mode={state.ui.clientModal.mode}
+        segment={state.ui.clientModal.targetSegment}
+        initialClient={editingClient}
+        onClose={actions.closeClientModal}
+        onSubmit={actions.saveClient}
+      />
+
+      <ClientDetailModal
+        client={selectedClient}
+        currencyCode={state.currencyCode}
+        onClose={actions.closeClientDetail}
+      />
+
+      <AddInventoryModal
+        isOpen={state.ui.showInventoryCreateModal}
+        inventoryMainTab={state.inventoryMainTab}
+        kitchenInventoryTab={state.kitchenInventoryTab}
+        onClose={actions.closeInventoryCreateModal}
+        onSubmit={actions.addInventoryItem}
+      />
+
+      <TableConfirmationModal
+        modalState={state.ui.confirmationModal}
+        onClose={actions.closeTableConfirmation}
+        onConfirm={actions.confirmTableAction}
+      />
+
+      {state.orderTakingContext && (
+        <OrderTakingInterface
+          context={state.orderTakingContext}
+          inventory={state.inventory}
+          kitchenOrders={state.kitchenOrders}
+          currencyCode={state.currencyCode}
+          onCancel={actions.cancelOrderTaking}
+          onConfirmOrder={actions.confirmOrderTaking}
+        />
+      )}
     </div>
   );
 };

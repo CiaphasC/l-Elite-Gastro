@@ -1,5 +1,13 @@
 import { useMemo } from "react";
-import { Clock, Crown, Grid2X2, MoreHorizontal, Plus, Users } from "lucide-react";
+import {
+  Clock,
+  Crown,
+  Eye,
+  Grid2X2,
+  MoreHorizontal,
+  Plus,
+  Users,
+} from "lucide-react";
 import ReservationTableSelector from "@/features/reservations/components/ReservationTableSelector";
 import type { Reservation, TableInfo } from "@/types";
 
@@ -8,13 +16,37 @@ interface ReservationsViewProps {
   tables: TableInfo[];
   onOpenNewReservation: () => void;
   onAssignTable: (reservationId: string, tableId: number) => void;
+  onStartService: (payload: {
+    tableId: number;
+    clientName: string;
+    reservationId: string | null;
+  }) => void;
 }
+
+const isVipStatus = (status: Reservation["status"]): boolean => status.includes("vip");
+
+const isConfirmedLikeStatus = (status: Reservation["status"]): boolean =>
+  status === "confirmado" || status === "vip reservado";
+
+const getDisplayStatus = (status: Reservation["status"]): string => {
+  const normalized = status.toLowerCase();
+  if (normalized.includes("en curso")) {
+    return "En Curso";
+  }
+
+  if (normalized.includes("confirmado")) {
+    return "Confirmado";
+  }
+
+  return "Reservado";
+};
 
 const ReservationsView = ({
   reservations,
   tables,
   onOpenNewReservation,
   onAssignTable,
+  onStartService,
 }: ReservationsViewProps) => {
   const availableTableIds = useMemo(
     () => tables.filter((table) => table.status === "disponible").map((table) => table.id),
@@ -36,14 +68,12 @@ const ReservationsView = ({
 
       <div className="space-y-4">
         {reservations.map((reservation) => {
-          const isVipReservation = reservation.status.includes("vip");
-          const currentTableId =
-            typeof reservation.table === "number" ? reservation.table : "";
-          const selectableTableIds = availableTableIds.filter(
-            (tableId) => tableId !== currentTableId
-          );
-          const displayStatus =
-            reservation.status === "confirmado" ? "Confirmado" : "Reservado";
+          const isVipReservation = isVipStatus(reservation.status);
+          const currentTableId = typeof reservation.table === "number" ? reservation.table : "";
+          const selectableTableIds = availableTableIds.filter((tableId) => tableId !== currentTableId);
+          const displayStatus = getDisplayStatus(reservation.status);
+          const canStartService =
+            isConfirmedLikeStatus(reservation.status) && typeof reservation.table === "number";
 
           return (
             <div
@@ -94,16 +124,36 @@ const ReservationsView = ({
                     className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
                       displayStatus === "Confirmado"
                         ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                        : "border-zinc-500/20 bg-zinc-500/10 text-zinc-400"
+                        : displayStatus === "En Curso"
+                          ? "border-[#E5C07B]/20 bg-[#E5C07B]/10 text-[#E5C07B]"
+                          : "border-zinc-500/20 bg-zinc-500/10 text-zinc-400"
                     }`}
                   >
                     {displayStatus}
                   </span>
                 </div>
 
-                <button className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/10">
-                  <MoreHorizontal size={20} />
-                </button>
+                <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+                  {canStartService && (
+                    <button
+                      onClick={() =>
+                        onStartService({
+                          tableId: reservation.table as number,
+                          clientName: reservation.name,
+                          reservationId: reservation.id,
+                        })
+                      }
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-emerald-400 transition-all hover:border-emerald-500/30 hover:bg-white/10 hover:text-white"
+                      title="Servicio a la carta"
+                    >
+                      <Eye size={20} />
+                    </button>
+                  )}
+
+                  <button className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/10">
+                    <MoreHorizontal size={20} />
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -114,4 +164,3 @@ const ReservationsView = ({
 };
 
 export default ReservationsView;
-

@@ -16,8 +16,20 @@ export type ActiveTab = (typeof ACTIVE_TABS)[number];
 export const MENU_CATEGORY_VALUES = [
   "Entrantes",
   "Principales",
+  "Guarniciones",
   "Vinos",
-  "Cocteleria",
+  "Coctelería",
+  "Cervezas",
+  "Licores",
+  "Refrescos",
+  "Carnes",
+  "Pescados",
+  "Verduras",
+  "Frutas",
+  "Lácteos",
+  "Secos",
+  "Aceites",
+  "Especias",
   "Postres",
 ] as const;
 
@@ -26,18 +38,35 @@ export type MenuCategory = (typeof MENU_CATEGORY_VALUES)[number];
 export type KitchenStatus = "pending" | "cooking" | "ready";
 export type KitchenModalType = "kitchen-detail" | "kitchen-serve" | null;
 export type KitchenModalActionType = Exclude<KitchenModalType, null>;
+export type InventoryItemType = "dish" | "ingredient";
+export type InventoryMainTab = "kitchen" | "bar";
+export type KitchenInventoryTab = "dishes" | "ingredients";
 
 export const TABLE_STATUS_VALUES = ["disponible", "ocupada", "reservada", "limpieza"] as const;
 export type TableStatus = (typeof TABLE_STATUS_VALUES)[number];
 
 export const RESERVATION_TYPE_VALUES = ["Cena", "Aniversario", "Negocios", "VIP"] as const;
 export type ReservationType = (typeof RESERVATION_TYPE_VALUES)[number];
-export type ReservationStatus = "vip" | "confirmado" | "pendiente";
+export const RESERVATION_STATUS_VALUES = [
+  "vip",
+  "confirmado",
+  "pendiente",
+  "vip pendiente",
+  "vip reservado",
+  "en curso",
+  "completado",
+] as const;
+export type ReservationStatus = (typeof RESERVATION_STATUS_VALUES)[number];
 export type ReservationTable = number | "---";
 
-export type ClientTier = "Platinum" | "Gold" | "Silver" | "Bronze";
+export type ClientTier = "Gold" | "Normal";
+export type ClientFilter = "clients" | "vip";
+export type ClientViewMode = "cards" | "table";
 export const SUPPORTED_CURRENCY_VALUES = ["ARS", "UYU", "COP", "MXN", "PEN", "USD"] as const;
 export type SupportedCurrencyCode = (typeof SUPPORTED_CURRENCY_VALUES)[number];
+export type NotificationType = "stock" | "success" | "info" | "vip";
+export type TableConfirmationAction = "cleaning" | "reservation" | "finish_service";
+export type ClientDocumentType = "DNI" | "CEDULA" | "PASAPORTE" | "CE" | "RUC";
 
 export interface MenuItem {
   id: number;
@@ -47,16 +76,26 @@ export interface MenuItem {
   img: string;
   stock: number;
   unit: string;
+  type: InventoryItemType;
 }
 
 export interface CartItem extends MenuItem {
   qty: number;
 }
 
+export interface TableSessionSummary {
+  name: string;
+  time: string;
+  guests: number;
+  type: string;
+}
+
 export interface TableInfo {
   id: number;
   status: TableStatus;
   guests: number;
+  cleaningStartTime?: string;
+  currentSession?: TableSessionSummary | null;
 }
 
 export interface Reservation {
@@ -77,6 +116,16 @@ export interface ReservationPayload {
   table?: ReservationTable;
 }
 
+export interface ClientHistoryItem {
+  id: number;
+  date: string;
+  type: string;
+  table: string;
+  items: string[];
+  total: number;
+  status: string;
+}
+
 export interface Client {
   id: number;
   name: string;
@@ -85,6 +134,29 @@ export interface Client {
   spend: number;
   lastVisit: string;
   preferences: string;
+  docType: ClientDocumentType;
+  docNumber: string;
+  phone?: string;
+  history: ClientHistoryItem[];
+}
+
+export interface ClientPayload {
+  name: string;
+  tier: ClientTier;
+  preferences: string;
+  docType: ClientDocumentType;
+  docNumber: string;
+  phone?: string;
+}
+
+export interface InventoryItemPayload {
+  name: string;
+  category: MenuCategory;
+  stock: number;
+  unit: string;
+  price: number;
+  type: InventoryItemType;
+  img: string;
 }
 
 export interface KitchenOrderItem {
@@ -106,6 +178,26 @@ export interface ServiceContext {
   serviceTier: "VIP" | "Standard";
 }
 
+export interface NotificationItem {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
+
+export interface OrderTakingContext {
+  tableId: number;
+  clientName: string;
+  reservationId: string | null;
+}
+
+export interface OrderTakingConfirmationPayload {
+  items: CartItem[];
+  total: number;
+}
+
 export interface DashboardSnapshot {
   netSales: number;
   diners: number;
@@ -114,12 +206,31 @@ export interface DashboardSnapshot {
   weeklyPerformance: number[];
 }
 
+export interface ConfirmationModalState {
+  isOpen: boolean;
+  tableId: number | null;
+  type: TableConfirmationAction | null;
+}
+
+export interface ClientModalState {
+  isOpen: boolean;
+  mode: "create" | "edit";
+  targetClientId: number | null;
+  targetSegment: ClientFilter;
+}
+
 export interface UIState {
   isLoading: boolean;
   showCheckout: boolean;
   showReservationModal: boolean;
   kitchenModalType: KitchenModalType;
   selectedOrderId: string | null;
+  showNotificationPanel: boolean;
+  showInventoryCreateModal: boolean;
+  confirmationModal: ConfirmationModalState;
+  reservationPrefill: Partial<ReservationPayload> | null;
+  clientModal: ClientModalState;
+  selectedClientId: number | null;
 }
 
 export interface RestaurantState {
@@ -127,7 +238,7 @@ export interface RestaurantState {
   currencyCode: SupportedCurrencyCode;
   selectedCategory: MenuCategory;
   searchTerm: string;
-  notifications: number;
+  notifications: NotificationItem[];
   cart: CartItem[];
   inventory: MenuItem[];
   kitchenOrders: KitchenOrder[];
@@ -136,19 +247,28 @@ export interface RestaurantState {
   tables: TableInfo[];
   serviceContext: ServiceContext;
   dashboard: DashboardSnapshot;
+  inventoryMainTab: InventoryMainTab;
+  kitchenInventoryTab: KitchenInventoryTab;
+  clientFilter: ClientFilter;
+  clientViewMode: ClientViewMode;
+  orderTakingContext: OrderTakingContext | null;
   ui: UIState;
 }
 
 export interface RestaurantDerived {
+  menuCategories: MenuCategory[];
   filteredMenuItems: MenuItem[];
   filteredInventoryItems: MenuItem[];
   filteredClients: Client[];
+  filteredVipClients: Client[];
   cartItemsCount: number;
   cartSubtotal: number;
   cartServiceFee: number;
   cartTotal: number;
   lowStockItems: MenuItem[];
   selectedKitchenOrder: KitchenOrder | null;
+  unreadNotificationsCount: number;
+  selectedClient: Client | null;
 }
 
 export interface RestaurantActions {
@@ -163,11 +283,40 @@ export interface RestaurantActions {
   openCheckout: () => void;
   closeCheckout: () => void;
   confirmCheckout: () => void;
-  openReservationModal: () => void;
+  openReservationModal: (prefill?: Partial<ReservationPayload>) => void;
   closeReservationModal: () => void;
   addReservation: (reservationPayload: ReservationPayload) => void;
   assignReservationTable: (reservationId: string, tableId: number) => void;
   adjustStock: (itemId: number, delta: number) => void;
+  setInventoryMainTab: (tab: InventoryMainTab) => void;
+  setKitchenInventoryTab: (tab: KitchenInventoryTab) => void;
+  setClientFilter: (filter: ClientFilter) => void;
+  setClientViewMode: (mode: ClientViewMode) => void;
+  openClientModal: (segment: ClientFilter, clientId?: number) => void;
+  closeClientModal: () => void;
+  saveClient: (payload: ClientPayload) => void;
+  openClientDetail: (clientId: number) => void;
+  closeClientDetail: () => void;
+  openInventoryCreateModal: () => void;
+  closeInventoryCreateModal: () => void;
+  addInventoryItem: (payload: InventoryItemPayload) => void;
+  toggleNotificationPanel: () => void;
+  closeNotificationPanel: () => void;
+  markNotificationAsRead: (notificationId: string) => void;
+  clearNotifications: () => void;
+  openTableConfirmation: (payload: {
+    tableId: number;
+    type: TableConfirmationAction;
+  }) => void;
+  closeTableConfirmation: () => void;
+  confirmTableAction: () => void;
+  startOrderTaking: (payload: {
+    tableId: number;
+    clientName: string;
+    reservationId: string | null;
+  }) => void;
+  cancelOrderTaking: () => void;
+  confirmOrderTaking: (payload: OrderTakingConfirmationPayload) => void;
   openKitchenModal: (modalType: KitchenModalActionType, orderId: string) => void;
   closeKitchenModal: () => void;
   completeKitchenOrder: (orderId?: string) => void;

@@ -15,9 +15,21 @@ const defaultFormState: Required<ReservationPayload> = {
   table: "---",
 };
 
+const buildInitialFormState = (
+  prefill: Partial<ReservationPayload> | null | undefined
+): Required<ReservationPayload> => ({
+  ...defaultFormState,
+  ...prefill,
+  table:
+    typeof prefill?.table === "number" || prefill?.table === "---"
+      ? prefill.table
+      : defaultFormState.table,
+});
+
 interface ReservationModalProps {
   isOpen: boolean;
   tables: TableInfo[];
+  prefill?: Partial<ReservationPayload> | null;
   onClose: () => void;
   onSubmitReservation: (payload: ReservationPayload) => void;
 }
@@ -25,10 +37,13 @@ interface ReservationModalProps {
 const ReservationModal = ({
   isOpen,
   tables,
+  prefill = null,
   onClose,
   onSubmitReservation,
 }: ReservationModalProps) => {
-  const [formState, setFormState] = useState(defaultFormState);
+  const [formState, setFormState] = useState<Required<ReservationPayload>>(() =>
+    buildInitialFormState(prefill)
+  );
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const formRef = useRef<HTMLDivElement | null>(null);
@@ -40,7 +55,7 @@ const ReservationModal = ({
   );
 
   const resetForm = () => {
-    setFormState(defaultFormState);
+    setFormState(buildInitialFormState(prefill));
   };
 
   const updateField = <K extends keyof typeof defaultFormState>(
@@ -97,9 +112,9 @@ const ReservationModal = ({
 
     const revealItems = formRef.current?.querySelectorAll(".animate-item") ?? [];
     const timeline = gsap.timeline({
-      onComplete: () => {
-        resetForm();
-        onClose();
+          onComplete: () => {
+            resetForm();
+            onClose();
         isClosingRef.current = false;
       },
     });
@@ -271,7 +286,7 @@ const ReservationModal = ({
                 Tipo de Evento
               </label>
               <div className="grid grid-cols-4 gap-2">
-                {RESERVATION_TYPES.map((type) => (
+              {RESERVATION_TYPES.map((type) => (
                   <div key={type} className="relative">
                     <input
                       type="radio"

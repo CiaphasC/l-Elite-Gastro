@@ -3,9 +3,10 @@ import type {
   DashboardSnapshot,
   KitchenOrder,
   MenuItem,
-  Reservation,
+  NotificationItem,
   ServiceContext,
   TableInfo,
+  Reservation,
 } from "@/types";
 
 export const INITIAL_MENU_ITEMS: MenuItem[] = [
@@ -17,6 +18,7 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
     img: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&q=80&w=800",
     stock: 12,
     unit: "raciones",
+    type: "dish",
   },
   {
     id: 2,
@@ -24,8 +26,9 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
     price: 38,
     category: "Entrantes",
     img: "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&q=80&w=800",
-    stock: 5,
+    stock: 3,
     unit: "docenas",
+    type: "dish",
   },
   {
     id: 3,
@@ -35,6 +38,7 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
     img: "https://images.pexels.com/photos/8753745/pexels-photo-8753745.jpeg?auto=compress&cs=tinysrgb&w=1200",
     stock: 20,
     unit: "kg",
+    type: "dish",
   },
   {
     id: 4,
@@ -44,6 +48,7 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
     img: "https://images.pexels.com/photos/6046747/pexels-photo-6046747.jpeg?auto=compress&cs=tinysrgb&w=1200",
     stock: 8,
     unit: "piezas",
+    type: "dish",
   },
   {
     id: 5,
@@ -53,15 +58,17 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
     img: "https://images.pexels.com/photos/33265/wine-bottle-wine-glasses-wine-ambience.jpg?auto=compress&cs=tinysrgb&w=1200",
     stock: 4,
     unit: "botellas",
+    type: "dish",
   },
   {
     id: 6,
     name: "Old Fashioned Ahumado",
     price: 22,
-    category: "Cocteleria",
+    category: "Coctelería",
     img: "https://images.pexels.com/photos/8346710/pexels-photo-8346710.jpeg?auto=compress&cs=tinysrgb&w=1200",
     stock: 50,
     unit: "copas",
+    type: "dish",
   },
   {
     id: 7,
@@ -71,21 +78,114 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
     img: "https://images.pexels.com/photos/32149261/pexels-photo-32149261.jpeg?auto=compress&cs=tinysrgb&w=1200",
     stock: 15,
     unit: "raciones",
+    type: "dish",
+  },
+  {
+    id: 8,
+    name: "Caviar Beluga",
+    price: 250,
+    category: "Entrantes",
+    img: "https://images.unsplash.com/photo-1599488615731-7e5c03c3417f?auto=format&fit=crop&q=80&w=800",
+    stock: 0,
+    unit: "latas",
+    type: "dish",
   },
 ];
 
+export const INITIAL_INGREDIENTS: MenuItem[] = [
+  {
+    id: 201,
+    name: "Lomo Fino Nacional",
+    category: "Carnes",
+    stock: 12.5,
+    unit: "kg",
+    price: 45,
+    type: "ingredient",
+    img: "https://images.unsplash.com/photo-1603048297172-c92544798d5a?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: 202,
+    name: "Arroz Arborio",
+    category: "Secos",
+    stock: 25,
+    unit: "kg",
+    price: 8.5,
+    type: "ingredient",
+    img: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: 203,
+    name: "Aceite de Trufa",
+    category: "Aceites",
+    stock: 2,
+    unit: "lt",
+    price: 120,
+    type: "ingredient",
+    img: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: 204,
+    name: "Papas Nativas",
+    category: "Verduras",
+    stock: 40,
+    unit: "kg",
+    price: 3.2,
+    type: "ingredient",
+    img: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: 205,
+    name: "Salmon Fresco",
+    category: "Pescados",
+    stock: 8,
+    unit: "kg",
+    price: 65,
+    type: "ingredient",
+    img: "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: 206,
+    name: "Crema de Leche",
+    category: "Lácteos",
+    stock: 15,
+    unit: "lt",
+    price: 12,
+    type: "ingredient",
+    img: "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=800",
+  },
+];
+
+export const INITIAL_INVENTORY: MenuItem[] = [...INITIAL_MENU_ITEMS, ...INITIAL_INGREDIENTS];
+
 export const TABLES: TableInfo[] = [
   { id: 101, status: "disponible", guests: 0 },
-  { id: 102, status: "ocupada", guests: 4 },
+  {
+    id: 102,
+    status: "ocupada",
+    guests: 4,
+    currentSession: {
+      name: "Familia Rossini",
+      time: "20:15",
+      guests: 4,
+      type: "Cena Casual",
+    },
+  },
   { id: 103, status: "reservada", guests: 2 },
   { id: 104, status: "disponible", guests: 0 },
-  { id: 105, status: "limpieza", guests: 0 },
+  { id: 105, status: "limpieza", guests: 0, cleaningStartTime: "22:15" },
   { id: 106, status: "disponible", guests: 0 },
-  { id: 107, status: "ocupada", guests: 3 },
-  { id: 108, status: "reservada", guests: 6 },
 ];
 
 export const INITIAL_RESERVATIONS: Reservation[] = [
+  {
+    id: "rsv-000",
+    name: "Familia Rossini",
+    time: "20:15",
+    guests: 4,
+    table: 102,
+    type: "Cena",
+    status: "en curso",
+  },
   {
     id: "rsv-001",
     name: "Roberto M.",
@@ -100,7 +200,7 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     name: "Familia Alarcon",
     time: "21:30",
     guests: 6,
-    table: 108,
+    table: "---",
     type: "Cena",
     status: "pendiente",
   },
@@ -113,26 +213,82 @@ export const INITIAL_RESERVATIONS: Reservation[] = [
     type: "Negocios",
     status: "vip",
   },
+  {
+    id: "rsv-004",
+    name: "Isabella Valentina",
+    time: "22:30",
+    guests: 2,
+    table: "---",
+    type: "VIP",
+    status: "vip reservado",
+  },
 ];
 
 export const CLIENTS: Client[] = [
   {
     id: 1,
-    name: "Isabella V.",
-    tier: "Platinum",
+    name: "Isabella Valentina",
+    tier: "Gold",
     visits: 42,
     spend: 12450,
     lastVisit: "Ayer",
     preferences: "Mesa lejos de la entrada, alergica a mariscos.",
+    docType: "DNI",
+    docNumber: "12345678",
+    phone: "+51 987 654 321",
+    history: [],
   },
   {
     id: 2,
-    name: "Carlos D.",
+    name: "Carlos Delgado",
     tier: "Gold",
     visits: 15,
     spend: 3200,
     lastVisit: "Hace 1 semana",
     preferences: "Prefiere vino tinto Cabernet.",
+    docType: "DNI",
+    docNumber: "87654321",
+    phone: "+51 912 345 678",
+    history: [],
+  },
+  {
+    id: 3,
+    name: "Ana Paredes",
+    tier: "Normal",
+    visits: 2,
+    spend: 180,
+    lastVisit: "Hoy",
+    preferences: "Sin sal.",
+    docType: "DNI",
+    docNumber: "45678912",
+    phone: "",
+    history: [],
+  },
+  {
+    id: 4,
+    name: "Jorge Martinez",
+    tier: "Normal",
+    visits: 5,
+    spend: 650,
+    lastVisit: "Hace 2 dias",
+    preferences: "",
+    docType: "CE",
+    docNumber: "00123456",
+    phone: "+51 998 877 665",
+    history: [],
+  },
+  {
+    id: 5,
+    name: "Roberto M.",
+    tier: "Normal",
+    visits: 8,
+    spend: 940,
+    lastVisit: "21:00",
+    preferences: "Aniversario",
+    docType: "DNI",
+    docNumber: "11223344",
+    phone: "555-1234",
+    history: [],
   },
 ];
 
@@ -140,8 +296,8 @@ export const INITIAL_KITCHEN_ORDERS: KitchenOrder[] = [
   {
     id: "T-102",
     items: [
-      { name: "Carpaccio Wagyu", qty: 1 },
-      { name: "Lubina", qty: 2 },
+      { name: "Carpaccio de Wagyu A5", qty: 1 },
+      { name: "Lubina Salvaje", qty: 2 },
     ],
     time: "12 min",
     status: "cooking",
@@ -151,8 +307,8 @@ export const INITIAL_KITCHEN_ORDERS: KitchenOrder[] = [
   {
     id: "T-105",
     items: [
-      { name: "Ostras", qty: 1 },
-      { name: "Solomillo", qty: 1 },
+      { name: "Ostras Fine de Claire", qty: 1 },
+      { name: "Solomillo Rossini", qty: 1 },
     ],
     time: "5 min",
     status: "pending",
@@ -161,11 +317,22 @@ export const INITIAL_KITCHEN_ORDERS: KitchenOrder[] = [
   },
   {
     id: "T-108",
-    items: [{ name: "Souffle", qty: 4 }],
+    items: [{ name: "Souffle Grand Marnier", qty: 4 }],
     time: "2 min",
     status: "ready",
     waiter: "Pedro G.",
     notes: "Servir todos a la vez",
+  },
+];
+
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: "notif-startup-sync",
+    type: "success",
+    title: "Servicio Iniciado",
+    message: "El sistema se sincronizo con cocina y bodega correctamente.",
+    time: "Hace 1 min",
+    read: true,
   },
 ];
 
@@ -181,4 +348,3 @@ export const INITIAL_DASHBOARD_SNAPSHOT: DashboardSnapshot = {
   serviceTimeMinutes: 14,
   weeklyPerformance: [45, 72, 48, 95, 68, 88, 100],
 };
-

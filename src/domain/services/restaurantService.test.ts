@@ -19,6 +19,7 @@ const inventory: MenuItem[] = [
     img: "x",
     stock: 2,
     unit: "u",
+    type: "dish",
   },
   {
     id: 2,
@@ -28,6 +29,7 @@ const inventory: MenuItem[] = [
     img: "y",
     stock: 5,
     unit: "u",
+    type: "dish",
   },
 ];
 

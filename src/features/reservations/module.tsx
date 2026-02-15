@@ -15,6 +15,7 @@ export const reservationsFeatureModule: FeatureModule = {
       tables={state.tables}
       onOpenNewReservation={actions.openReservationModal}
       onAssignTable={actions.assignReservationTable}
+      onStartService={actions.startOrderTaking}
     />
   ),
 };

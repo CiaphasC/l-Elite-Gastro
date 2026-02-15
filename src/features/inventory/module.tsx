@@ -9,7 +9,15 @@ export const inventoryFeatureModule: FeatureModule = {
   shortLabel: "Bodega",
   searchEnabled: true,
   Icon: Package,
-  render: ({ actions, derived }) => (
-    <InventoryView items={derived.filteredInventoryItems} onAdjustStock={actions.adjustStock} />
+  render: ({ state, actions, derived }) => (
+    <InventoryView
+      items={derived.filteredInventoryItems}
+      inventoryMainTab={state.inventoryMainTab}
+      kitchenInventoryTab={state.kitchenInventoryTab}
+      onSetInventoryMainTab={actions.setInventoryMainTab}
+      onSetKitchenInventoryTab={actions.setKitchenInventoryTab}
+      onOpenCreateModal={actions.openInventoryCreateModal}
+      onAdjustStock={actions.adjustStock}
+    />
   ),
 };

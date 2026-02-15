@@ -9,7 +9,17 @@ export const clientsFeatureModule: FeatureModule = {
   shortLabel: "Clientes",
   searchEnabled: true,
   Icon: UserCheck,
-  render: ({ state, derived }) => (
-    <ClientsView clients={derived.filteredClients} currencyCode={state.currencyCode} />
+  render: ({ state, actions, derived }) => (
+    <ClientsView
+      clients={derived.filteredClients}
+      currencyCode={state.currencyCode}
+      filter={state.clientFilter}
+      viewMode={state.clientViewMode}
+      onFilterChange={actions.setClientFilter}
+      onViewModeChange={actions.setClientViewMode}
+      onCreateClient={actions.openClientModal}
+      onOpenClientDetail={actions.openClientDetail}
+      onEditClient={actions.openClientModal}
+    />
   ),
 };

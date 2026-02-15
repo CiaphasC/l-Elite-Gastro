@@ -10,11 +10,13 @@ import {
   Users,
   Wine,
 } from "lucide-react";
-import type { Reservation, TableInfo } from "@/types";
+import type { Reservation, TableConfirmationAction, TableInfo } from "@/types";
 
 interface TablesViewProps {
   tables: TableInfo[];
   reservations: Reservation[];
+  onRequestTableAction: (payload: { tableId: number; type: TableConfirmationAction }) => void;
+  onOpenReservationFromTable: (tableId: number) => void;
 }
 
 interface ReservationLikeDetails {
@@ -105,13 +107,16 @@ const isAvailableDetails = (details: TableDetails): details is AvailableDetails 
 const isCleaningDetails = (details: TableDetails): details is CleaningDetails =>
   "startTime" in details;
 
-const getTableDetails = (
-  table: TableInfo,
-  reservations: Reservation[]
-): TableDetails | null => {
+const getTableDetails = (table: TableInfo, reservations: Reservation[]): TableDetails | null => {
   switch (table.status) {
     case "reservada": {
-      const reservation = reservations.find((reservationItem) => reservationItem.table === table.id);
+      const reservation = reservations.find(
+        (reservationItem) =>
+          reservationItem.table === table.id &&
+          reservationItem.status !== "completado" &&
+          reservationItem.status !== "en curso"
+      );
+
       if (reservation) {
         return {
           name: reservation.name,
@@ -128,13 +133,31 @@ const getTableDetails = (
         type: "Reserva General",
       };
     }
-    case "ocupada":
+    case "ocupada": {
+      const reservationInService = reservations.find(
+        (reservationItem) =>
+          reservationItem.table === table.id && reservationItem.status === "en curso"
+      );
+      if (reservationInService) {
+        return {
+          name: reservationInService.name,
+          time: reservationInService.time,
+          guests: reservationInService.guests || table.guests || 2,
+          type: reservationInService.type,
+        };
+      }
+
+      if (table.currentSession) {
+        return table.currentSession;
+      }
+
       return {
-        name: "Familia Rossini",
-        time: "20:15",
-        guests: table.guests,
-        type: "Cena Casual",
+        name: "Comensales",
+        time: "Ahora",
+        guests: table.guests || 2,
+        type: "Walk-in",
       };
+    }
     case "disponible":
       return {
         lastFree: "19:45",
@@ -142,7 +165,7 @@ const getTableDetails = (
       };
     case "limpieza":
       return {
-        startTime: "22:15",
+        startTime: table.cleaningStartTime || "22:15",
         staff: "Roberto S.",
       };
     default:
@@ -281,9 +304,9 @@ const TableOverlayContent = ({ table, details }: TableOverlayContentProps) => {
           >
             {table.status === "ocupada" ? "● En Servicio" : "○ Pendiente"}
           </span>
-          <button className="flex items-center gap-1 text-[9px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-white">
-            Ver Detalle <ChevronRight size={10} />
-          </button>
+          <span className="flex items-center gap-1 text-[9px] uppercase tracking-widest text-zinc-500">
+            {table.status === "ocupada" ? "Fin Servicio" : "Ver Detalle"} <ChevronRight size={10} />
+          </span>
         </div>
       </div>
     );
@@ -292,7 +315,15 @@ const TableOverlayContent = ({ table, details }: TableOverlayContentProps) => {
   return null;
 };
 
-const TablesView = ({ tables, reservations }: TablesViewProps) => {
+const isTouchDevice = (): boolean =>
+  typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+
+const TablesView = ({
+  tables,
+  reservations,
+  onRequestTableAction,
+  onOpenReservationFromTable,
+}: TablesViewProps) => {
   const [hoveredTable, setHoveredTable] = useState<number | null>(null);
 
   const tableDetailsById = useMemo(
@@ -325,7 +356,31 @@ const TablesView = ({ tables, reservations }: TablesViewProps) => {
     };
   }, [hoveredTable]);
 
+  useEffect(() => {
+    if (!isTouchDevice()) {
+      return;
+    }
+
+    const closeOnOutsideTouch = (event: MouseEvent) => {
+      const targetElement = event.target as HTMLElement | null;
+      if (!targetElement) {
+        return;
+      }
+
+      if (!targetElement.closest(".table-card-interactive")) {
+        setHoveredTable(null);
+      }
+    };
+
+    window.addEventListener("click", closeOnOutsideTouch);
+    return () => window.removeEventListener("click", closeOnOutsideTouch);
+  }, []);
+
   const handleTableHover = (tableId: number, isHovering: boolean): void => {
+    if (isTouchDevice()) {
+      return;
+    }
+
     const selectors = getModalSelectors(tableId);
 
     if (isHovering) {
@@ -365,6 +420,30 @@ const TablesView = ({ tables, reservations }: TablesViewProps) => {
     );
   };
 
+  const handleTableClick = (table: TableInfo): void => {
+    if (isTouchDevice() && hoveredTable !== table.id) {
+      setHoveredTable(table.id);
+      return;
+    }
+
+    if (table.status === "limpieza") {
+      onRequestTableAction({ tableId: table.id, type: "cleaning" });
+      return;
+    }
+
+    if (table.status === "reservada") {
+      onRequestTableAction({ tableId: table.id, type: "reservation" });
+      return;
+    }
+
+    if (table.status === "ocupada") {
+      onRequestTableAction({ tableId: table.id, type: "finish_service" });
+      return;
+    }
+
+    onOpenReservationFromTable(table.id);
+  };
+
   return (
     <div className="grid max-w-5xl grid-cols-2 gap-4 py-2 animate-in fade-in duration-500 sm:gap-6 sm:py-4 md:grid-cols-3 md:gap-8">
       {tables.map((table) => {
@@ -376,7 +455,8 @@ const TablesView = ({ tables, reservations }: TablesViewProps) => {
             key={table.id}
             onMouseEnter={() => handleTableHover(table.id, true)}
             onMouseLeave={() => handleTableHover(table.id, false)}
-            className="glass-panel group relative aspect-square cursor-pointer overflow-hidden rounded-[1.6rem] transition-all hover:border-[#E5C07B]/40 sm:rounded-[2.5rem]"
+            onClick={() => handleTableClick(table)}
+            className="glass-panel table-card-interactive group relative aspect-square cursor-pointer overflow-hidden rounded-[1.6rem] transition-all hover:border-[#E5C07B]/40 sm:rounded-[2.5rem]"
           >
             <div
               className={`absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-10 ${statusStyle.ambientGradientClass}`}

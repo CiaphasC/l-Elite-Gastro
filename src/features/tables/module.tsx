@@ -9,5 +9,12 @@ export const tablesFeatureModule: FeatureModule = {
   shortLabel: "Salon",
   searchEnabled: false,
   Icon: Grid2X2,
-  render: ({ state }) => <TablesView tables={state.tables} reservations={state.reservations} />,
+  render: ({ state, actions }) => (
+    <TablesView
+      tables={state.tables}
+      reservations={state.reservations}
+      onRequestTableAction={actions.openTableConfirmation}
+      onOpenReservationFromTable={(tableId) => actions.openReservationModal({ table: tableId })}
+    />
+  ),
 };

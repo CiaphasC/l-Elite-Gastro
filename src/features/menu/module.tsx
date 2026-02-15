@@ -11,6 +11,7 @@ export const menuFeatureModule: FeatureModule = {
   Icon: UtensilsCrossed,
   render: ({ state, actions, derived }) => (
     <MenuView
+      categories={derived.menuCategories}
       selectedCategory={state.selectedCategory}
       currencyCode={state.currencyCode}
       onSelectCategory={actions.setSelectedCategory}

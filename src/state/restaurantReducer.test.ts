@@ -66,6 +66,25 @@ describe("restaurantReducer", () => {
     expect(nextState.cart.find((cartItem) => cartItem.id === item.id)?.qty).toBe(item.stock - 10);
   });
 
+  it("reconciles checkout cart against inventory before confirming order", () => {
+    const state = createInitialState();
+    const item = state.inventory[0];
+
+    const withCart = {
+      ...state,
+      cart: [{ ...item, qty: item.stock + 5 }],
+      ui: { ...state.ui, showCheckout: true },
+    };
+
+    const nextState = restaurantReducer(withCart, { type: ACTIONS.CONFIRM_CHECKOUT } as never);
+
+    expect(nextState.inventory.find((inventoryItem) => inventoryItem.id === item.id)?.stock).toBe(0);
+    expect(nextState.cart).toHaveLength(0);
+    expect(nextState.notifications.some((notification) => notification.title === "Comanda Ajustada")).toBe(
+      true
+    );
+  });
+
   it("closes checkout modal even when cart is empty", () => {
     const nextState = runAction({ type: ACTIONS.CONFIRM_CHECKOUT });
     expect(nextState.ui.showCheckout).toBe(false);
@@ -116,5 +135,40 @@ describe("restaurantReducer", () => {
     expect(updatedReservation?.status).toBe("confirmado");
     expect(nextState.tables.find((table) => table.id === 103)?.status).toBe("disponible");
     expect(nextState.tables.find((table) => table.id === 104)?.status).toBe("reservada");
+  });
+
+  it("reconciles order-taking items against stock before sending to kitchen", () => {
+    const state = createInitialState();
+    const dish = state.inventory.find((item) => item.type === "dish");
+
+    if (!dish) {
+      throw new Error("Missing dish fixture item");
+    }
+
+    const withOrderTakingContext = {
+      ...state,
+      orderTakingContext: {
+        tableId: 101,
+        clientName: state.clients[0]?.name ?? "Cliente",
+        reservationId: null,
+      },
+    };
+
+    const nextState = restaurantReducer(withOrderTakingContext, {
+      type: ACTIONS.CONFIRM_ORDER_TAKING,
+      payload: {
+        items: [{ ...dish, qty: dish.stock + 8 }],
+        total: 9999,
+      },
+    } as never);
+
+    const updatedKitchenOrder = nextState.kitchenOrders.find((order) => order.id === "T-101");
+    const kitchenLine = updatedKitchenOrder?.items.find((line) => line.name === dish.name);
+
+    expect(kitchenLine?.qty).toBe(dish.stock);
+    expect(nextState.inventory.find((item) => item.id === dish.id)?.stock).toBe(0);
+    expect(nextState.notifications.some((notification) => notification.title === "Comanda Ajustada")).toBe(
+      true
+    );
   });
 });

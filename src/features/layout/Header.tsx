@@ -1,21 +1,35 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { Bell, Search } from "lucide-react";
+import NotificationPanel from "@/features/layout/NotificationPanel";
+import type { NotificationItem } from "@/types";
 
 interface HeaderProps {
   title: string;
   showSearch: boolean;
-  notifications: number;
+  notifications: NotificationItem[];
+  unreadNotificationsCount: number;
+  isNotificationPanelOpen: boolean;
   searchTerm: string;
   onSearchTermChange: (searchTerm: string) => void;
+  onToggleNotifications: () => void;
+  onCloseNotifications: () => void;
+  onClearNotifications: () => void;
+  onReadNotification: (notificationId: string) => void;
 }
 
 const Header = ({
   title,
   showSearch,
   notifications,
+  unreadNotificationsCount,
+  isNotificationPanelOpen,
   searchTerm,
   onSearchTermChange,
+  onToggleNotifications,
+  onCloseNotifications,
+  onClearNotifications,
+  onReadNotification,
 }: HeaderProps) => {
   const titleRef = useRef<HTMLHeadingElement | null>(null);
 
@@ -57,7 +71,7 @@ const Header = ({
             </h1>
           </div>
 
-          <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
+          <div className="relative flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
             {showSearch && (
               <div className="group relative hidden lg:block">
                 <Search
@@ -75,22 +89,23 @@ const Header = ({
             )}
 
             <div className="flex items-center gap-4">
-              <div className="group relative cursor-pointer">
-                <Bell
-                  size={20}
-                  className="text-zinc-400 transition-colors group-hover:text-white"
-                />
-                {notifications > 0 && (
-                  <span className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full bg-[#E5C07B]" />
-                )}
+              <div className="group relative">
+                <button
+                  type="button"
+                  onClick={onToggleNotifications}
+                  className="relative cursor-pointer text-zinc-400 transition-colors hover:text-white"
+                >
+                  <Bell size={20} />
+                  {unreadNotificationsCount > 0 && (
+                    <span className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full bg-[#E5C07B] shadow-[0_0_10px_#E5C07B]" />
+                  )}
+                </button>
               </div>
 
               <div className="flex items-center gap-3 border-l border-white/10 pl-4 lg:gap-4 lg:pl-6">
                 <div className="hidden text-right sm:block">
                   <p className="text-sm font-medium text-white">Jean-Luc Picard</p>
-                  <p className="text-[10px] uppercase tracking-widest text-[#E5C07B]">
-                    Gerente
-                  </p>
+                  <p className="text-[10px] uppercase tracking-widest text-[#E5C07B]">Gerente</p>
                 </div>
                 <div className="w-10 rounded-full border border-[#E5C07B]/30 p-0.5">
                   <img
@@ -101,6 +116,14 @@ const Header = ({
                 </div>
               </div>
             </div>
+
+            <NotificationPanel
+              isOpen={isNotificationPanelOpen}
+              notifications={notifications}
+              onClose={onCloseNotifications}
+              onClear={onClearNotifications}
+              onMarkAsRead={onReadNotification}
+            />
           </div>
         </div>
 
@@ -125,4 +148,3 @@ const Header = ({
 };
 
 export default Header;
-
