@@ -58,12 +58,16 @@ export const useRestaurantStore = (): RestaurantStore => {
       openCheckout: () => dispatch({ type: ACTIONS.SET_CHECKOUT_OPEN, payload: true }),
       closeCheckout: () => dispatch({ type: ACTIONS.SET_CHECKOUT_OPEN, payload: false }),
       confirmCheckout: () => dispatch({ type: ACTIONS.CONFIRM_CHECKOUT }),
-      openReservationModal: (prefill?: Partial<ReservationPayload>) =>
+      openReservationModal: (
+        prefill?: Partial<ReservationPayload>,
+        reservationId?: string
+      ) =>
         dispatch({
           type: ACTIONS.SET_RESERVATION_MODAL_OPEN,
           payload: {
             isOpen: true,
             prefill: prefill ?? null,
+            reservationId: reservationId ?? null,
           },
         }),
       closeReservationModal: () =>

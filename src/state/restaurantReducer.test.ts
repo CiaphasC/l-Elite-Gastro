@@ -137,6 +137,73 @@ describe("restaurantReducer", () => {
     expect(nextState.tables.find((table) => table.id === 104)?.status).toBe("reservada");
   });
 
+  it("edits reservation from modal context without creating duplicates", () => {
+    const state = createInitialState();
+    const withEditingContext = {
+      ...state,
+      ui: {
+        ...state.ui,
+        showReservationModal: true,
+        reservationEditingId: "rsv-001",
+      },
+    };
+
+    const nextState = restaurantReducer(withEditingContext, {
+      type: ACTIONS.ADD_RESERVATION,
+      payload: {
+        name: "Roberto M. Actualizado",
+        time: "21:20",
+        guests: 3,
+        type: "Cena",
+        table: 104,
+      },
+    } as never);
+
+    const updatedReservation = nextState.reservations.find(
+      (reservation) => reservation.id === "rsv-001"
+    );
+
+    expect(nextState.reservations).toHaveLength(state.reservations.length);
+    expect(updatedReservation?.name).toBe("Roberto M. Actualizado");
+    expect(updatedReservation?.table).toBe(104);
+    expect(nextState.tables.find((table) => table.id === 103)?.status).toBe("disponible");
+    expect(nextState.tables.find((table) => table.id === 104)?.status).toBe("reservada");
+    expect(nextState.ui.reservationEditingId).toBeNull();
+    expect(nextState.ui.showReservationModal).toBe(false);
+  });
+
+  it("keeps current table when editing reservation to an unavailable table", () => {
+    const state = createInitialState();
+    const withEditingContext = {
+      ...state,
+      ui: {
+        ...state.ui,
+        showReservationModal: true,
+        reservationEditingId: "rsv-001",
+      },
+    };
+
+    const nextState = restaurantReducer(withEditingContext, {
+      type: ACTIONS.ADD_RESERVATION,
+      payload: {
+        name: "Roberto M.",
+        time: "21:10",
+        guests: 2,
+        type: "Cena",
+        table: 102,
+      },
+    } as never);
+
+    const unchangedReservation = nextState.reservations.find(
+      (reservation) => reservation.id === "rsv-001"
+    );
+
+    expect(unchangedReservation?.table).toBe(103);
+    expect(nextState.notifications.some((notification) => notification.title === "Mesa No Disponible")).toBe(
+      true
+    );
+  });
+
   it("reconciles order-taking items against stock before sending to kitchen", () => {
     const state = createInitialState();
     const dish = state.inventory.find((item) => item.type === "dish");

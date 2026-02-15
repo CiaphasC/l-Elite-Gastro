@@ -223,6 +223,7 @@ export interface UIState {
   isLoading: boolean;
   showCheckout: boolean;
   showReservationModal: boolean;
+  reservationEditingId: string | null;
   kitchenModalType: KitchenModalType;
   selectedOrderId: string | null;
   showNotificationPanel: boolean;
@@ -283,7 +284,10 @@ export interface RestaurantActions {
   openCheckout: () => void;
   closeCheckout: () => void;
   confirmCheckout: () => void;
-  openReservationModal: (prefill?: Partial<ReservationPayload>) => void;
+  openReservationModal: (
+    prefill?: Partial<ReservationPayload>,
+    reservationId?: string
+  ) => void;
   closeReservationModal: () => void;
   addReservation: (reservationPayload: ReservationPayload) => void;
   assignReservationTable: (reservationId: string, tableId: number) => void;

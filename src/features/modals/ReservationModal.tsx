@@ -30,6 +30,7 @@ interface ReservationModalProps {
   isOpen: boolean;
   tables: TableInfo[];
   prefill?: Partial<ReservationPayload> | null;
+  mode?: "create" | "edit";
   onClose: () => void;
   onSubmitReservation: (payload: ReservationPayload) => void;
 }
@@ -38,6 +39,7 @@ const ReservationModal = ({
   isOpen,
   tables,
   prefill = null,
+  mode = "create",
   onClose,
   onSubmitReservation,
 }: ReservationModalProps) => {
@@ -50,8 +52,18 @@ const ReservationModal = ({
   const isClosingRef = useRef(false);
 
   const availableTableIds = useMemo(
-    () => tables.filter((table) => table.status === "disponible").map((table) => table.id),
-    [tables]
+    () => {
+      const selectableTableIds = tables
+        .filter((table) => table.status === "disponible")
+        .map((table) => table.id);
+
+      if (typeof formState.table === "number" && !selectableTableIds.includes(formState.table)) {
+        selectableTableIds.push(formState.table);
+      }
+
+      return selectableTableIds.sort((tableA, tableB) => tableA - tableB);
+    },
+    [tables, formState.table]
   );
 
   const resetForm = () => {
@@ -213,10 +225,12 @@ const ReservationModal = ({
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#E5C07B]/20 bg-[#E5C07B]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#E5C07B] shadow-[0_0_15px_rgba(229,192,123,0.1)]">
               <Star size={10} fill="currentColor" /> Concierge
             </div>
-            <h3 className="mb-2 font-serif text-4xl tracking-tight text-white">Nueva Reserva</h3>
+            <h3 className="mb-2 font-serif text-4xl tracking-tight text-white">
+              {mode === "edit" ? "Editar Reserva" : "Nueva Reserva"}
+            </h3>
             <p className="mb-8 flex items-center gap-3 text-xs uppercase tracking-widest text-zinc-500">
               <span className="h-[1px] w-8 bg-gradient-to-r from-zinc-700 to-transparent" />
-              Registrar en Agenda
+              {mode === "edit" ? "Actualizar en Agenda" : "Registrar en Agenda"}
             </p>
           </div>
 
@@ -314,7 +328,8 @@ const ReservationModal = ({
               >
                 <div className="absolute inset-0 translate-y-full bg-white/20 transition-transform duration-500 group-hover:translate-y-0" />
                 <span className="relative flex items-center justify-center gap-2">
-                  Confirmar Reserva <CheckCircle2 size={16} />
+                  {mode === "edit" ? "Guardar Cambios" : "Confirmar Reserva"}{" "}
+                  <CheckCircle2 size={16} />
                 </span>
               </button>
             </div>

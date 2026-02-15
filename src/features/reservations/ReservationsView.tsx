@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Clock,
   Crown,
+  Edit,
   Eye,
   Grid2X2,
   MoreHorizontal,
@@ -15,6 +16,7 @@ interface ReservationsViewProps {
   reservations: Reservation[];
   tables: TableInfo[];
   onOpenNewReservation: () => void;
+  onEditReservation: (reservation: Reservation) => void;
   onAssignTable: (reservationId: string, tableId: number) => void;
   onStartService: (payload: {
     tableId: number;
@@ -25,8 +27,11 @@ interface ReservationsViewProps {
 
 const isVipStatus = (status: Reservation["status"]): boolean => status.includes("vip");
 
-const isConfirmedLikeStatus = (status: Reservation["status"]): boolean =>
-  status === "confirmado" || status === "vip reservado";
+const canInspectOrder = (reservation: Reservation): boolean =>
+  typeof reservation.table === "number" &&
+  (reservation.status === "confirmado" ||
+    reservation.status === "vip reservado" ||
+    reservation.status === "en curso");
 
 const getDisplayStatus = (status: Reservation["status"]): string => {
   const normalized = status.toLowerCase();
@@ -45,20 +50,48 @@ const ReservationsView = ({
   reservations,
   tables,
   onOpenNewReservation,
+  onEditReservation,
   onAssignTable,
   onStartService,
 }: ReservationsViewProps) => {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
   const availableTableIds = useMemo(
     () => tables.filter((table) => table.status === "disponible").map((table) => table.id),
     [tables]
   );
 
+  useEffect(() => {
+    const closeMenuOnOutsideClick = (event: MouseEvent): void => {
+      const targetElement = event.target as HTMLElement | null;
+      if (!rootRef.current || !targetElement) {
+        return;
+      }
+
+      if (!rootRef.current.contains(targetElement)) {
+        setOpenMenuId(null);
+        return;
+      }
+
+      if (!targetElement.closest("[data-reservation-menu]")) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener("click", closeMenuOnOutsideClick);
+    return () => document.removeEventListener("click", closeMenuOnOutsideClick);
+  }, []);
+
   return (
-    <div className="glass-panel animate-in fade-in rounded-[2.5rem] p-5 duration-500 sm:p-8">
+    <div
+      ref={rootRef}
+      className="glass-panel animate-in fade-in rounded-[2.5rem] p-5 duration-500 sm:p-8"
+    >
       <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="font-serif text-xl text-white sm:text-2xl">Agenda de Hoy</h3>
         <button
-          onClick={onOpenNewReservation}
+          onClick={() => onOpenNewReservation()}
           className="flex items-center justify-center gap-2 rounded-xl bg-[#E5C07B] px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.12em] text-black shadow-lg shadow-[#E5C07B]/20 transition-colors hover:bg-[#c4a162] sm:px-5 sm:text-xs sm:tracking-widest"
         >
           <Plus size={16} />
@@ -72,8 +105,8 @@ const ReservationsView = ({
           const currentTableId = typeof reservation.table === "number" ? reservation.table : "";
           const selectableTableIds = availableTableIds.filter((tableId) => tableId !== currentTableId);
           const displayStatus = getDisplayStatus(reservation.status);
-          const canStartService =
-            isConfirmedLikeStatus(reservation.status) && typeof reservation.table === "number";
+          const canStartService = canInspectOrder(reservation);
+          const isMenuOpen = openMenuId === reservation.id;
 
           return (
             <div
@@ -133,26 +166,54 @@ const ReservationsView = ({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 border-l border-white/10 pl-4">
-                  {canStartService && (
-                    <button
-                      onClick={() =>
-                        onStartService({
-                          tableId: reservation.table as number,
-                          clientName: reservation.name,
-                          reservationId: reservation.id,
-                        })
-                      }
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-emerald-400 transition-all hover:border-emerald-500/30 hover:bg-white/10 hover:text-white"
-                      title="Servicio a la carta"
-                    >
-                      <Eye size={20} />
-                    </button>
-                  )}
-
-                  <button className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/10">
+                <div className="relative flex items-center gap-2 border-l border-white/10 pl-4">
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setOpenMenuId((currentOpenMenuId) =>
+                        currentOpenMenuId === reservation.id ? null : reservation.id
+                      );
+                    }}
+                    data-reservation-menu="trigger"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 transition-colors hover:bg-white/10"
+                  >
                     <MoreHorizontal size={20} />
                   </button>
+
+                  {isMenuOpen && (
+                    <div
+                      data-reservation-menu="panel"
+                      className="animate-in fade-in zoom-in-95 absolute right-0 top-full z-50 mt-2 flex w-48 flex-col overflow-hidden rounded-xl border border-[#E5C07B]/20 bg-[#1a1a1a] py-1 shadow-2xl duration-200"
+                    >
+                      {canStartService && (
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onStartService({
+                              tableId: reservation.table as number,
+                              clientName: reservation.name,
+                              reservationId: reservation.id,
+                            });
+                            setOpenMenuId(null);
+                          }}
+                          className="flex w-full items-center gap-3 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-emerald-400 transition-colors hover:bg-white/5"
+                        >
+                          <Eye size={14} /> Ver Orden
+                        </button>
+                      )}
+
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEditReservation(reservation);
+                          setOpenMenuId(null);
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
+                      >
+                        <Edit size={14} /> Editar
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

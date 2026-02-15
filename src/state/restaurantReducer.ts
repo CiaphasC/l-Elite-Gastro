@@ -40,6 +40,7 @@ import type {
   RestaurantState,
   SupportedCurrencyCode,
   TableConfirmationAction,
+  TableInfo,
   UIState,
 } from "@/types";
 
@@ -98,7 +99,11 @@ type RestaurantAction =
   | { type: typeof ACTIONS.CONFIRM_CHECKOUT }
   | {
       type: typeof ACTIONS.SET_RESERVATION_MODAL_OPEN;
-      payload: { isOpen: boolean; prefill?: Partial<ReservationPayload> | null };
+      payload: {
+        isOpen: boolean;
+        prefill?: Partial<ReservationPayload> | null;
+        reservationId?: string | null;
+      };
     }
   | { type: typeof ACTIONS.ADD_RESERVATION; payload: ReservationPayload }
   | {
@@ -320,6 +325,7 @@ export const createInitialState = (): RestaurantState => {
       isLoading: true,
       showCheckout: false,
       showReservationModal: false,
+      reservationEditingId: null,
       kitchenModalType: null,
       selectedOrderId: null,
       showNotificationPanel: false,
@@ -501,10 +507,128 @@ export const restaurantReducer = (
           ...state.ui,
           showReservationModal: action.payload.isOpen,
           reservationPrefill: action.payload.isOpen ? action.payload.prefill ?? null : null,
+          reservationEditingId: action.payload.isOpen
+            ? action.payload.reservationId ?? null
+            : null,
         },
       };
 
     case ACTIONS.ADD_RESERVATION: {
+      const isVipReservation =
+        action.payload.type === "VIP" ||
+        Boolean(resolveClientMatch(state.clients, action.payload.name)?.tier === "Gold");
+      const editingReservationId = state.ui.reservationEditingId;
+
+      if (editingReservationId) {
+        const targetReservation = state.reservations.find(
+          (reservation) => reservation.id === editingReservationId
+        );
+
+        if (!targetReservation) {
+          return {
+            ...state,
+            ui: {
+              ...state.ui,
+              showReservationModal: false,
+              reservationPrefill: null,
+              reservationEditingId: null,
+            },
+          };
+        }
+
+        const requestedTable =
+          typeof action.payload.table === "number" || action.payload.table === "---"
+            ? action.payload.table
+            : targetReservation.table;
+        const oldTable = targetReservation.table;
+        const requestedTableInfo =
+          typeof requestedTable === "number"
+            ? state.tables.find((table) => table.id === requestedTable)
+            : undefined;
+        const canUseRequestedTable =
+          requestedTable === "---" ||
+          requestedTable === oldTable ||
+          requestedTableInfo?.status === "disponible";
+        const finalTable =
+          canUseRequestedTable && requestedTable !== undefined
+            ? requestedTable
+            : targetReservation.table;
+        const keepsLiveStatus =
+          targetReservation.status === "en curso" || targetReservation.status === "completado";
+        const nextStatus = keepsLiveStatus
+          ? targetReservation.status
+          : isVipReservation
+            ? typeof finalTable === "number"
+              ? "vip reservado"
+              : "vip pendiente"
+            : typeof finalTable === "number"
+              ? "confirmado"
+              : "pendiente";
+
+        const nextReservations = state.reservations.map((reservation) =>
+          reservation.id === editingReservationId
+            ? {
+                ...reservation,
+                name: action.payload.name,
+                time: action.payload.time,
+                guests: action.payload.guests,
+                type: action.payload.type ?? reservation.type,
+                table: finalTable,
+                status: nextStatus,
+              }
+            : reservation
+        );
+
+        const nextTables: TableInfo[] = state.tables.map((table): TableInfo => {
+          if (
+            typeof oldTable === "number" &&
+            oldTable !== finalTable &&
+            table.id === oldTable &&
+            table.status === "reservada"
+          ) {
+            return { ...table, status: "disponible", guests: 0 };
+          }
+
+          if (typeof finalTable === "number" && table.id === finalTable) {
+            return {
+              ...table,
+              status: nextStatus === "en curso" ? "ocupada" : "reservada",
+              guests: action.payload.guests,
+            };
+          }
+
+          return table;
+        });
+
+        return {
+          ...state,
+          reservations: nextReservations,
+          tables: nextTables,
+          notifications: withPrependedNotifications(state.notifications, [
+            createNotification(
+              "info",
+              "Reserva Actualizada",
+              `La reserva de ${action.payload.name} fue actualizada.`
+            ),
+            ...(!canUseRequestedTable && requestedTable !== targetReservation.table
+              ? [
+                  createNotification(
+                    "stock",
+                    "Mesa No Disponible",
+                    `Se mantuvo la mesa actual porque la mesa ${String(requestedTable)} no estaba disponible.`
+                  ),
+                ]
+              : []),
+          ]),
+          ui: {
+            ...state.ui,
+            showReservationModal: false,
+            reservationPrefill: null,
+            reservationEditingId: null,
+          },
+        };
+      }
+
       const reservationMutationResult = appendReservationWithTableAssignment(
         state.reservations,
         state.tables,
@@ -512,8 +636,6 @@ export const restaurantReducer = (
       );
       const nextReservations = [...reservationMutationResult.reservations];
       const createdReservation = nextReservations[nextReservations.length - 1];
-      const isVipReservation =
-        action.payload.type === "VIP" || Boolean(resolveClientMatch(state.clients, action.payload.name)?.tier === "Gold");
 
       if (createdReservation) {
         const hasTable = typeof createdReservation.table === "number";
@@ -550,6 +672,7 @@ export const restaurantReducer = (
           ...state.ui,
           showReservationModal: false,
           reservationPrefill: null,
+          reservationEditingId: null,
         },
       };
     }

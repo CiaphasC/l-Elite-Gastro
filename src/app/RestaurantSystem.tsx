@@ -91,7 +91,11 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
     typeof state.ui.clientModal.targetClientId === "number"
       ? state.clients.find((client) => client.id === state.ui.clientModal.targetClientId) ?? null
       : null;
-  const reservationModalKey = `reservation-${state.ui.showReservationModal ? JSON.stringify(state.ui.reservationPrefill ?? {}) : "closed"}`;
+  const reservationModalKey = `reservation-${
+    state.ui.showReservationModal
+      ? `${state.ui.reservationEditingId ?? "new"}-${JSON.stringify(state.ui.reservationPrefill ?? {})}`
+      : "closed"
+  }`;
   const clientModalKey = `client-${state.ui.clientModal.isOpen ? "open" : "closed"}-${state.ui.clientModal.mode}-${state.ui.clientModal.targetClientId ?? "new"}-${state.ui.clientModal.targetSegment}`;
 
   return (
@@ -180,6 +184,7 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
         isOpen={state.ui.showReservationModal}
         tables={state.tables}
         prefill={state.ui.reservationPrefill}
+        mode={state.ui.reservationEditingId ? "edit" : "create"}
         onClose={actions.closeReservationModal}
         onSubmitReservation={actions.addReservation}
       />
