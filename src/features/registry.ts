@@ -5,6 +5,7 @@ import { reservationsFeatureModule } from "@/features/reservations/module";
 import { kitchenFeatureModule } from "@/features/kitchen/module";
 import { clientsFeatureModule } from "@/features/clients/module";
 import { inventoryFeatureModule } from "@/features/inventory/module";
+import { managementFeatureModule } from "@/features/management/module";
 import { settingsFeatureModule } from "@/features/settings/module";
 import type { FeatureModule } from "@/features/types";
 import type { ActiveTab } from "@/types";
@@ -17,6 +18,7 @@ export const orderedFeatureModules: readonly FeatureModule[] = [
   kitchenFeatureModule,
   clientsFeatureModule,
   inventoryFeatureModule,
+  managementFeatureModule,
   settingsFeatureModule,
 ];
 

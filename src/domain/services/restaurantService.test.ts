@@ -91,10 +91,10 @@ describe("appendReservation", () => {
 
 describe("reservation table assignment", () => {
   const reservationTables: TableInfo[] = [
-    { id: 11, status: "disponible", guests: 0 },
-    { id: 12, status: "reservada", guests: 2 },
-    { id: 13, status: "disponible", guests: 0 },
-    { id: 14, status: "reservada", guests: 5 },
+    { id: 11, name: "Mesa 11", code: "M-11", capacity: 4, status: "disponible", guests: 0 },
+    { id: 12, name: "Mesa 12", code: "M-12", capacity: 4, status: "reservada", guests: 2 },
+    { id: 13, name: "Mesa 13", code: "M-13", capacity: 6, status: "disponible", guests: 0 },
+    { id: 14, name: "Mesa 14", code: "M-14", capacity: 6, status: "reservada", guests: 5 },
   ];
 
   const baseReservations: Reservation[] = [

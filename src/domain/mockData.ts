@@ -7,6 +7,7 @@ import type {
   ServiceContext,
   TableInfo,
   Reservation,
+  WorkerAccount,
 } from "@/types";
 import { createSalesRecord } from "@/domain/dashboard";
 
@@ -159,9 +160,12 @@ export const INITIAL_INGREDIENTS: MenuItem[] = [
 export const INITIAL_INVENTORY: MenuItem[] = [...INITIAL_MENU_ITEMS, ...INITIAL_INGREDIENTS];
 
 export const TABLES: TableInfo[] = [
-  { id: 101, status: "disponible", guests: 0 },
+  { id: 101, name: "Terraza Norte", code: "M-101", capacity: 4, status: "disponible", guests: 0 },
   {
     id: 102,
+    name: "Salon Central A",
+    code: "M-102",
+    capacity: 6,
     status: "ocupada",
     guests: 4,
     currentSession: {
@@ -171,10 +175,43 @@ export const TABLES: TableInfo[] = [
       type: "Cena Casual",
     },
   },
-  { id: 103, status: "reservada", guests: 2 },
-  { id: 104, status: "disponible", guests: 0 },
-  { id: 105, status: "limpieza", guests: 0, cleaningStartTime: "22:15" },
-  { id: 106, status: "disponible", guests: 0 },
+  { id: 103, name: "Salon Central B", code: "M-103", capacity: 2, status: "reservada", guests: 2 },
+  { id: 104, name: "Jardin Este", code: "M-104", capacity: 4, status: "disponible", guests: 0 },
+  {
+    id: 105,
+    name: "Privado Cava",
+    code: "M-105",
+    capacity: 8,
+    status: "limpieza",
+    guests: 0,
+    cleaningStartTime: "22:15",
+  },
+  { id: 106, name: "Jardin Oeste", code: "M-106", capacity: 4, status: "disponible", guests: 0 },
+];
+
+export const INITIAL_WORKERS: WorkerAccount[] = [
+  {
+    id: "wrk-admin-001",
+    fullName: "Jean-Luc Picard",
+    email: "admin@lelite.com",
+    password: "admin123",
+    role: "admin",
+    status: "active",
+    startedAt: "2022-01-10",
+    createdAt: "2022-01-10T08:00:00.000Z",
+    validatedAt: "2022-01-10T08:05:00.000Z",
+  },
+  {
+    id: "wrk-waiter-001",
+    fullName: "Pedro Gomez",
+    email: "mesero@lelite.com",
+    password: "mesero123",
+    role: "waiter",
+    status: "active",
+    startedAt: "2023-07-18",
+    createdAt: "2023-07-18T09:30:00.000Z",
+    validatedAt: "2023-07-18T09:40:00.000Z",
+  },
 ];
 
 export const INITIAL_RESERVATIONS: Reservation[] = [

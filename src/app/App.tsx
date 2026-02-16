@@ -60,10 +60,6 @@ const App = () => {
       {view === "landing" ? (
         <LandingPage
           onEnter={(role) => {
-            if (bootstrapQuery.data) {
-              hydrateState(bootstrapQuery.data);
-            }
-
             setUserRole(role);
             setActiveTab(role === "waiter" ? "menu" : "dash");
             setView("system");

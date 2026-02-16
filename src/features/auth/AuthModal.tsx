@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { Crown, KeyRound, Lock, Mail, User, X } from "lucide-react";
+import { CalendarDays, Crown, KeyRound, Lock, Mail, User, X } from "lucide-react";
 import ModalBackdrop from "@/shared/components/ModalBackdrop";
 import PremiumParticleBackground from "@/shared/components/PremiumParticleBackground";
+import { useRestaurantActions, useRestaurantShallowSelector } from "@/store/hooks";
 import type { UserRole } from "@/types";
 
 interface AuthModalProps {
@@ -14,8 +15,17 @@ interface AuthModalProps {
 const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
   const [isRegister, setIsRegister] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>("admin");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [startedAt, setStartedAt] = useState(new Date().toISOString().slice(0, 10));
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formNotice, setFormNotice] = useState<string | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
+  const workers = useRestaurantShallowSelector((state) => state.workers);
+  const { registerWorkerAccount } = useRestaurantActions();
 
   useEffect(() => {
     if (!isOpen) {
@@ -45,6 +55,13 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
   const resetState = () => {
     setIsRegister(false);
     setSelectedRole("admin");
+    setFullName("");
+    setEmail("");
+    setPassword("");
+    setInviteCode("");
+    setStartedAt(new Date().toISOString().slice(0, 10));
+    setFormError(null);
+    setFormNotice(null);
   };
 
   const handleClose = () => {
@@ -52,8 +69,63 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
     onClose();
   };
 
+  const toggleRegisterMode = () => {
+    setIsRegister((previous) => {
+      const next = !previous;
+      setFormError(null);
+      setFormNotice(null);
+      if (next) {
+        setSelectedRole("waiter");
+      }
+      return next;
+    });
+  };
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+    const safePassword = password.trim();
+
+    if (isRegister) {
+      if (!fullName.trim() || !normalizedEmail || !safePassword || !startedAt) {
+        setFormError("Completa todos los campos para registrar la cuenta.");
+        return;
+      }
+
+      if (!normalizedEmail.includes("@")) {
+        setFormError("Ingresa un correo corporativo valido.");
+        return;
+      }
+
+      const hasDuplicatedEmail = workers.some(
+        (worker) => worker.email.trim().toLowerCase() === normalizedEmail
+      );
+      if (hasDuplicatedEmail) {
+        setFormError("Ese correo ya esta registrado en el sistema.");
+        return;
+      }
+
+      registerWorkerAccount({
+        fullName: fullName.trim(),
+        email: normalizedEmail,
+        password: safePassword,
+        startedAt,
+        role: "waiter",
+      });
+
+      setFormError(null);
+      setFormNotice("Cuenta registrada. Debe ser validada desde Administracion.");
+      setIsRegister(false);
+      setSelectedRole("waiter");
+      setPassword("");
+      return;
+    }
+
+    if (!normalizedEmail || !safePassword) {
+      setFormError("Ingresa correo y contraseña para continuar.");
+      return;
+    }
+
     const nextRole = selectedRole;
     resetState();
     onLogin(nextRole);
@@ -121,6 +193,27 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {isRegister && (
+              <div className="space-y-2">
+                <label className="pl-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                  Nombre Completo
+                </label>
+                <div className="group relative">
+                  <User
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-[#E5C07B]"
+                    size={18}
+                  />
+                  <input
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
+                    type="text"
+                    placeholder="Nombre y apellido"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-4 text-white outline-none transition-all placeholder:text-zinc-600 focus:border-[#E5C07B] focus:bg-black/40"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="pl-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                 Email Corporativo
@@ -131,6 +224,8 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
                   size={18}
                 />
                 <input
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   type="email"
                   placeholder="usuario@lelite.com"
                   className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-4 text-white outline-none transition-all placeholder:text-zinc-600 focus:border-[#E5C07B] focus:bg-black/40"
@@ -148,6 +243,8 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
                   size={18}
                 />
                 <input
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   type="password"
                   placeholder="••••••••"
                   className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-4 text-white outline-none transition-all placeholder:text-zinc-600 focus:border-[#E5C07B] focus:bg-black/40"
@@ -166,11 +263,45 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
                     size={18}
                   />
                   <input
+                    value={inviteCode}
+                    onChange={(event) => setInviteCode(event.target.value)}
                     type="text"
                     placeholder="Código de acceso"
                     className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-4 text-white outline-none transition-all placeholder:text-zinc-600 focus:border-[#E5C07B] focus:bg-black/40"
                   />
                 </div>
+              </div>
+            )}
+
+            {isRegister && (
+              <div className="animate-in slide-in-from-bottom-2 space-y-2 fade-in">
+                <label className="pl-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                  Inicio Laboral
+                </label>
+                <div className="group relative">
+                  <CalendarDays
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-[#E5C07B]"
+                    size={18}
+                  />
+                  <input
+                    value={startedAt}
+                    onChange={(event) => setStartedAt(event.target.value)}
+                    type="date"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-4 text-white outline-none transition-all focus:border-[#E5C07B] focus:bg-black/40"
+                  />
+                </div>
+              </div>
+            )}
+
+            {formError && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-300">
+                {formError}
+              </div>
+            )}
+
+            {formNotice && (
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs text-emerald-300">
+                {formNotice}
               </div>
             )}
 
@@ -185,7 +316,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
           <div className="mt-8 text-center">
             <button
               type="button"
-              onClick={() => setIsRegister((previous) => !previous)}
+              onClick={toggleRegisterMode}
               className="text-xs text-zinc-400 underline decoration-zinc-700 underline-offset-4 transition-colors hover:text-[#E5C07B] hover:decoration-[#E5C07B]"
             >
               {isRegister ? "¿Ya tienes cuenta? Iniciar Sesión" : "¿Nuevo empleado? Registrar Cuenta"}

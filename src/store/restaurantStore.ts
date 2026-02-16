@@ -8,6 +8,7 @@ import { createNotificationSlice } from "@/store/slices/notificationSlice";
 import { createReservationSlice } from "@/store/slices/reservationSlice";
 import { createTableServiceSlice } from "@/store/slices/tableServiceSlice";
 import { createUiSlice } from "@/store/slices/uiSlice";
+import { createAdministrationSlice } from "@/store/slices/administrationSlice";
 import type { RestaurantActions, RestaurantState } from "@/types";
 
 export type RestaurantStore = RestaurantState & RestaurantActions;
@@ -15,6 +16,7 @@ export type RestaurantStore = RestaurantState & RestaurantActions;
 export const useRestaurantZustandStore = create<RestaurantStore>()((...args) => ({
   ...createInitialRestaurantState(),
   ...createUiSlice(...args),
+  ...createAdministrationSlice(...args),
   ...createCartSlice(...args),
   ...createReservationSlice(...args),
   ...createInventorySlice(...args),

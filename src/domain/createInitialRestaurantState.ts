@@ -9,6 +9,7 @@ import {
   INITIAL_RESERVATIONS,
   INITIAL_SALES_HISTORY,
   INITIAL_SERVICE_CONTEXT,
+  INITIAL_WORKERS,
   TABLES,
 } from "@/domain/mockData";
 import type { RestaurantState } from "@/types";
@@ -29,6 +30,7 @@ export const createInitialRestaurantState = (): RestaurantState => {
     kitchenOrders: INITIAL_KITCHEN_ORDERS,
     reservations: INITIAL_RESERVATIONS,
     clients: CLIENTS,
+    workers: INITIAL_WORKERS,
     tables: TABLES,
     salesHistory: initialSalesHistory,
     serviceContext: INITIAL_SERVICE_CONTEXT,

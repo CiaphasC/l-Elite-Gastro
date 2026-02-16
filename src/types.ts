@@ -8,6 +8,7 @@ export const ACTIVE_TABS = [
   "kitchen",
   "clients",
   "inventory",
+  "management",
   "settings",
 ] as const;
 
@@ -71,6 +72,7 @@ export type ServiceNotificationEvent =
   | "table_available"
   | "table_maintenance"
   | "table_reserved";
+export type WorkerAccountStatus = "pending" | "active";
 export type TableConfirmationAction = "cleaning" | "reservation" | "finish_service";
 export type ClientDocumentType = "DNI" | "CEDULA" | "PASAPORTE" | "CE" | "RUC";
 
@@ -98,10 +100,35 @@ export interface TableSessionSummary {
 
 export interface TableInfo {
   id: number;
+  name: string;
+  code: string;
+  capacity: number;
   status: TableStatus;
   guests: number;
   cleaningStartTime?: string;
   currentSession?: TableSessionSummary | null;
+}
+
+export interface WorkerAccount {
+  id: string;
+  fullName: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  status: WorkerAccountStatus;
+  startedAt: string;
+  createdAt: string;
+  validatedAt: string | null;
+}
+
+export interface WorkerAccountPayload {
+  fullName: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  startedAt: string;
+  createdAt: string;
+  validatedAt: string | null;
 }
 
 export interface Reservation {
@@ -163,6 +190,20 @@ export interface InventoryItemPayload {
   price: number;
   type: InventoryItemType;
   img: string;
+}
+
+export interface TableManagementPayload {
+  name: string;
+  code: string;
+  capacity: number;
+}
+
+export interface WorkerRegistrationPayload {
+  fullName: string;
+  email: string;
+  password: string;
+  startedAt: string;
+  role?: UserRole;
 }
 
 export interface KitchenOrderItem {
@@ -276,6 +317,7 @@ export interface RestaurantState {
   kitchenOrders: KitchenOrder[];
   reservations: Reservation[];
   clients: Client[];
+  workers: WorkerAccount[];
   tables: TableInfo[];
   salesHistory: SalesRecord[];
   serviceContext: ServiceContext;
@@ -321,6 +363,15 @@ export interface RestaurantActions {
   openInventoryCreateModal: () => void;
   closeInventoryCreateModal: () => void;
   addInventoryItem: (payload: InventoryItemPayload) => void;
+  addTable: (payload: TableManagementPayload) => void;
+  updateTable: (tableId: number, payload: TableManagementPayload) => void;
+  removeTable: (tableId: number) => void;
+  reorderTables: (activeTableId: number, overTableId: number) => void;
+  createWorkerAccount: (payload: WorkerAccountPayload) => void;
+  registerWorkerAccount: (payload: WorkerRegistrationPayload) => void;
+  updateWorkerAccount: (workerId: string, payload: WorkerAccountPayload) => void;
+  validateWorkerAccount: (workerId: string) => void;
+  removeWorkerAccount: (workerId: string) => void;
   toggleNotificationPanel: () => void;
   closeNotificationPanel: () => void;
   markNotificationAsRead: (notificationId: string) => void;
