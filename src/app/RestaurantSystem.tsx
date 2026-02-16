@@ -138,6 +138,7 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
         serviceFee={derived.cartServiceFee}
         total={derived.cartTotal}
         serviceContext={state.serviceContext}
+        tables={state.tables}
         onClearCart={actions.clearCart}
         onUpdateQty={actions.updateCartQty}
         onOpenCheckout={actions.openCheckout}

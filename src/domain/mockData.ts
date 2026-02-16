@@ -1,13 +1,14 @@
 import type {
   Client,
-  DashboardSnapshot,
   KitchenOrder,
   MenuItem,
   NotificationItem,
+  SalesRecord,
   ServiceContext,
   TableInfo,
   Reservation,
 } from "@/types";
+import { createSalesRecord } from "@/domain/dashboard";
 
 export const INITIAL_MENU_ITEMS: MenuItem[] = [
   {
@@ -333,6 +334,9 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     message: "El sistema se sincronizo con cocina y bodega correctamente.",
     time: "Hace 1 min",
     read: true,
+    meta: {
+      navigateTo: "kitchen",
+    },
   },
 ];
 
@@ -341,10 +345,25 @@ export const INITIAL_SERVICE_CONTEXT: ServiceContext = {
   serviceTier: "VIP",
 };
 
-export const INITIAL_DASHBOARD_SNAPSHOT: DashboardSnapshot = {
-  netSales: 4820,
-  diners: 84,
-  averageTicket: 157,
-  serviceTimeMinutes: 14,
-  weeklyPerformance: [45, 72, 48, 95, 68, 88, 100],
+const dateFromToday = (daysOffset: number, hour: number, minute = 0): Date => {
+  const date = new Date();
+  date.setHours(hour, minute, 0, 0);
+  date.setDate(date.getDate() + daysOffset);
+  return date;
 };
+
+export const INITIAL_SALES_HISTORY: SalesRecord[] = [
+  createSalesRecord(380, dateFromToday(-27, 21, 10)),
+  createSalesRecord(420, dateFromToday(-24, 20, 20)),
+  createSalesRecord(510, dateFromToday(-21, 22, 0)),
+  createSalesRecord(295, dateFromToday(-18, 13, 40)),
+  createSalesRecord(360, dateFromToday(-15, 14, 15)),
+  createSalesRecord(445, dateFromToday(-12, 21, 5)),
+  createSalesRecord(520, dateFromToday(-10, 19, 45)),
+  createSalesRecord(610, dateFromToday(-7, 20, 0)),
+  createSalesRecord(430, dateFromToday(-6, 22, 20)),
+  createSalesRecord(390, dateFromToday(-4, 18, 30)),
+  createSalesRecord(520, dateFromToday(-2, 20, 40)),
+  createSalesRecord(470, dateFromToday(-1, 21, 25)),
+  createSalesRecord(650, dateFromToday(0, 12, 10)),
+];

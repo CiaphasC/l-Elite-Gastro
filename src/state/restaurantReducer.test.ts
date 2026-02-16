@@ -1,4 +1,5 @@
 import { ACTIONS, createInitialState, restaurantReducer } from "@/state/restaurantReducer";
+import { selectMenuCategories } from "@/domain/selectors";
 import { describe, expect, it } from "vitest";
 
 const runAction = (action: { type: string; payload?: unknown }) => {
@@ -93,6 +94,50 @@ describe("restaurantReducer", () => {
   it("updates selected currency", () => {
     const nextState = runAction({ type: ACTIONS.SET_CURRENCY_CODE, payload: "MXN" });
     expect(nextState.currencyCode).toBe("MXN");
+  });
+
+  it("recomputes dashboard diners and average ticket from client base", () => {
+    const state = createInitialState();
+
+    const nextState = restaurantReducer(state, {
+      type: ACTIONS.SAVE_CLIENT,
+      payload: {
+        name: "Cliente Nuevo",
+        tier: "Normal",
+        preferences: "",
+        docType: "DNI",
+        docNumber: "00000000",
+      },
+    } as never);
+
+    const totalSpend = nextState.clients.reduce((acc, client) => acc + client.spend, 0);
+    const expectedAverage = Math.round((totalSpend / nextState.clients.length) * 100) / 100;
+
+    expect(nextState.dashboard.diners).toBe(nextState.clients.length);
+    expect(nextState.dashboard.averageTicket).toBe(expectedAverage);
+  });
+
+  it("adds kitchen/bar dish stock into menu categories", () => {
+    const state = createInitialState();
+
+    const nextState = restaurantReducer(state, {
+      type: ACTIONS.ADD_INVENTORY_ITEM,
+      payload: {
+        name: "Negroni de Autor",
+        category: "Coctelería",
+        stock: 12,
+        unit: "copas",
+        price: 19,
+        type: "dish",
+        img: "https://example.com/negroni.jpg",
+      },
+    } as never);
+
+    const categories = selectMenuCategories(nextState);
+    expect(categories).toContain("Coctelería");
+    expect(
+      nextState.inventory.some((item) => item.name === "Negroni de Autor" && item.type === "dish")
+    ).toBe(true);
   });
 
   it("creates reservations with optional table assignment and reserves the table", () => {
@@ -237,5 +282,74 @@ describe("restaurantReducer", () => {
     expect(nextState.notifications.some((notification) => notification.title === "Comanda Ajustada")).toBe(
       true
     );
+  });
+
+  it("removes stock alerts when item stock is resolved", () => {
+    const state = createInitialState();
+    const lowStockItem = state.inventory.find((item) => item.stock > 0 && item.stock < 5);
+
+    if (!lowStockItem) {
+      throw new Error("Missing low stock fixture item");
+    }
+
+    expect(
+      state.notifications.some((notification) => notification.meta?.stockItemId === lowStockItem.id)
+    ).toBe(true);
+
+    const nextState = restaurantReducer(state, {
+      type: ACTIONS.ADJUST_STOCK,
+      payload: { itemId: lowStockItem.id, delta: 10 },
+    } as never);
+
+    expect(nextState.inventory.find((item) => item.id === lowStockItem.id)?.stock).toBeGreaterThanOrEqual(
+      5
+    );
+    expect(
+      nextState.notifications.some((notification) => notification.meta?.stockItemId === lowStockItem.id)
+    ).toBe(false);
+  });
+
+  it("dismisses service started notification after reading it", () => {
+    const state = createInitialState();
+    const dish = state.inventory.find((item) => item.type === "dish" && item.stock > 0);
+
+    if (!dish) {
+      throw new Error("Missing dish fixture item");
+    }
+
+    const withOrderTakingContext = {
+      ...state,
+      orderTakingContext: {
+        tableId: 101,
+        clientName: state.clients[0]?.name ?? "Cliente",
+        reservationId: null,
+      },
+    };
+
+    const withStartedService = restaurantReducer(withOrderTakingContext, {
+      type: ACTIONS.CONFIRM_ORDER_TAKING,
+      payload: {
+        items: [{ ...dish, qty: 1 }],
+        total: dish.price,
+      },
+    } as never);
+
+    const serviceNotification = withStartedService.notifications.find(
+      (notification) => notification.title === "Servicio Iniciado"
+    );
+
+    if (!serviceNotification) {
+      throw new Error("Expected service-started notification");
+    }
+
+    const afterRead = restaurantReducer(withStartedService, {
+      type: ACTIONS.MARK_NOTIFICATION_AS_READ,
+      payload: serviceNotification.id,
+    } as never);
+
+    expect(afterRead.notifications.some((notification) => notification.id === serviceNotification.id)).toBe(
+      false
+    );
+    expect(afterRead.activeTab).toBe("tables");
   });
 });

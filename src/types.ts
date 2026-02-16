@@ -185,6 +185,12 @@ export interface NotificationItem {
   message: string;
   time: string;
   read: boolean;
+  meta?: {
+    stockItemId?: number;
+    stockSeverity?: "low" | "critical";
+    navigateTo?: ActiveTab;
+    dismissOnRead?: boolean;
+  };
 }
 
 export interface OrderTakingContext {
@@ -198,12 +204,29 @@ export interface OrderTakingConfirmationPayload {
   total: number;
 }
 
+export interface SalesRecord {
+  id: string;
+  amount: number;
+  createdAt: string;
+}
+
+export interface DashboardPeriodSales {
+  day: number;
+  week: number;
+  month: number;
+}
+
+export interface WeeklyPerformancePoint {
+  label: string;
+  amount: number;
+}
+
 export interface DashboardSnapshot {
   netSales: number;
   diners: number;
   averageTicket: number;
-  serviceTimeMinutes: number;
-  weeklyPerformance: number[];
+  salesByPeriod: DashboardPeriodSales;
+  weeklyPerformance: WeeklyPerformancePoint[];
 }
 
 export interface ConfirmationModalState {
@@ -246,6 +269,7 @@ export interface RestaurantState {
   reservations: Reservation[];
   clients: Client[];
   tables: TableInfo[];
+  salesHistory: SalesRecord[];
   serviceContext: ServiceContext;
   dashboard: DashboardSnapshot;
   inventoryMainTab: InventoryMainTab;

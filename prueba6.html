@@ -1667,6 +1667,7 @@ const Dashboard = ({ onLogout }) => {
       ...INITIAL_INGREDIENTS
   ]);
   const [tables, setTables] = useState(INITIAL_TABLES);
+  const [selectedCartTable, setSelectedCartTable] = useState(102);
   const [kitchenOrders, setKitchenOrders] = useState(INITIAL_KITCHEN_ORDERS);
   const [reservations, setReservations] = useState(INITIAL_RESERVATIONS);
   const [clients, setClients] = useState(INITIAL_CLIENTS); 
@@ -3362,9 +3363,21 @@ const Dashboard = ({ onLogout }) => {
         <div className="p-10 flex-1 flex flex-col min-h-0 relative z-10">
           <div className="flex justify-between items-center mb-10">
               <div>
-                  <h2 className="text-3xl font-serif text-white tracking-tight">Comanda Actual</h2>
-                  <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-2">
-                    Mesa 102 • <span className="text-[#E5C07B]">VIP Service</span>
+                  <h2 className="text-3xl font-serif text-white tracking-tight">Recibo de Orden</h2>
+                  <div className="mt-2">
+                    <CustomSelect
+                      variant="minimal"
+                      options={tables.map(t => ({ value: t.id, label: `Mesa ${t.id}` }))}
+                      value={selectedCartTable}
+                      onChange={(nextTable) => {
+                        if (nextTable === "" || nextTable === "---") return;
+                        const tableId = typeof nextTable === "number" ? nextTable : parseInt(nextTable, 10);
+                        if (!Number.isNaN(tableId)) {
+                          setSelectedCartTable(tableId);
+                        }
+                      }}
+                      placeholder="Seleccionar Mesa"
+                    />
                   </div>
               </div>
               <button onClick={() => setCart([])} className="w-12 h-12 rounded-xl border border-white/10 flex items-center justify-center text-zinc-500 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-all">

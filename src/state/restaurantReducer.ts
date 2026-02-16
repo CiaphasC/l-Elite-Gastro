@@ -1,12 +1,13 @@
 import { INITIAL_ACTIVE_TAB, MENU_CATEGORIES } from "@/domain/constants";
 import { DEFAULT_CURRENCY_CODE } from "@/domain/currency";
+import { buildDashboardSnapshot, createSalesRecord } from "@/domain/dashboard";
 import {
   CLIENTS,
-  INITIAL_DASHBOARD_SNAPSHOT,
   INITIAL_INVENTORY,
   INITIAL_KITCHEN_ORDERS,
   INITIAL_NOTIFICATIONS,
   INITIAL_RESERVATIONS,
+  INITIAL_SALES_HISTORY,
   INITIAL_SERVICE_CONTEXT,
   TABLES,
 } from "@/domain/mockData";
@@ -38,6 +39,7 @@ import type {
   OrderTakingConfirmationPayload,
   ReservationPayload,
   RestaurantState,
+  SalesRecord,
   SupportedCurrencyCode,
   TableConfirmationAction,
   TableInfo,
@@ -169,7 +171,8 @@ const createNotification = (
   title: string,
   message: string,
   read = false,
-  time = "Ahora"
+  time = "Ahora",
+  meta?: NotificationItem["meta"]
 ): NotificationItem => ({
   id: createNotificationId(),
   type,
@@ -177,7 +180,57 @@ const createNotification = (
   message,
   time,
   read,
+  meta,
 });
+
+const resolveStockSeverity = (stock: number): "low" | "critical" | null => {
+  if (stock <= 0) {
+    return "critical";
+  }
+
+  if (stock < stockAlertThreshold) {
+    return "low";
+  }
+
+  return null;
+};
+
+const createStockNotificationForItem = (
+  item: MenuItem,
+  severity = resolveStockSeverity(item.stock)
+): NotificationItem | null => {
+  if (!severity) {
+    return null;
+  }
+
+  if (severity === "critical") {
+    return createNotification(
+      "stock",
+      "Stock Critico",
+      `${item.name} esta agotado en inventario.`,
+      false,
+      "Ahora",
+      {
+        stockItemId: item.id,
+        stockSeverity: "critical",
+        navigateTo: "inventory",
+      }
+    );
+  }
+
+  return createNotification(
+    "stock",
+    "Alerta de Stock",
+    `Quedan pocas unidades de ${item.name} (${item.stock} ${item.unit}).`,
+    false,
+    "Ahora",
+    {
+      stockItemId: item.id,
+      stockSeverity: "low",
+      navigateTo: "inventory",
+    }
+  );
+};
 
 const createStockTransitionNotifications = (
   previousInventory: MenuItem[],
@@ -191,46 +244,68 @@ const createStockTransitionNotifications = (
       continue;
     }
 
-    if (previousItem.stock > 0 && nextItem.stock === 0) {
-      notifications.push(
-        createNotification(
-          "stock",
-          "Stock Critico",
-          `${previousItem.name} se ha agotado en bodega.`
-        )
-      );
-      continue;
-    }
+    const previousSeverity = resolveStockSeverity(previousItem.stock);
+    const nextSeverity = resolveStockSeverity(nextItem.stock);
 
-    if (previousItem.stock >= stockAlertThreshold && nextItem.stock < stockAlertThreshold) {
-      notifications.push(
-        createNotification(
-          "stock",
-          "Alerta de Stock",
-          `${previousItem.name} esta por agotarse. Quedan ${nextItem.stock} ${nextItem.unit}.`
-        )
-      );
+    if (nextSeverity && previousSeverity !== nextSeverity) {
+      const notification = createStockNotificationForItem(nextItem, nextSeverity);
+      if (notification) {
+        notifications.push(notification);
+      }
     }
   }
 
   return notifications;
 };
 
-const createStartupNotifications = (inventory: MenuItem[]): NotificationItem[] => {
-  const startupStockAlerts = inventory
-    .filter((item) => item.stock <= 0 || item.stock < stockAlertThreshold)
-    .map((item) =>
-      item.stock <= 0
-        ? createNotification("stock", "Stock Critico", `${item.name} esta agotado en inventario.`)
-        : createNotification(
-            "stock",
-            "Alerta de Stock",
-            `Quedan pocas unidades de ${item.name} (${item.stock} ${item.unit}).`
-          )
-    );
+const createStartupNotifications = (inventory: MenuItem[]): NotificationItem[] => [
+  ...inventory
+    .map((item) => createStockNotificationForItem(item))
+    .filter((item): item is NotificationItem => item !== null),
+  ...INITIAL_NOTIFICATIONS,
+];
 
-  return [...startupStockAlerts, ...INITIAL_NOTIFICATIONS];
-};
+const pruneResolvedStockNotifications = (
+  notifications: NotificationItem[],
+  inventory: MenuItem[]
+): NotificationItem[] =>
+  notifications.filter((notification) => {
+    if (notification.type !== "stock") {
+      return true;
+    }
+
+    const stockItemId = notification.meta?.stockItemId;
+    if (typeof stockItemId !== "number") {
+      return true;
+    }
+
+    const currentItem = inventory.find((item) => item.id === stockItemId);
+    if (!currentItem) {
+      return false;
+    }
+
+    const currentSeverity = resolveStockSeverity(currentItem.stock);
+    if (!currentSeverity) {
+      return false;
+    }
+
+    const notificationSeverity = notification.meta?.stockSeverity;
+    if (!notificationSeverity) {
+      return true;
+    }
+
+    return notificationSeverity === currentSeverity;
+  });
+
+const withInventoryAwareNotifications = (
+  currentNotifications: NotificationItem[],
+  incomingNotifications: NotificationItem[],
+  inventory: MenuItem[]
+): NotificationItem[] =>
+  pruneResolvedStockNotifications(
+    withPrependedNotifications(currentNotifications, incomingNotifications),
+    inventory
+  );
 
 const toCartQtyMap = (items: CartItem[]): Map<number, number> =>
   new Map(items.map((item) => [item.id, item.qty]));
@@ -294,13 +369,13 @@ const resolveClientMatch = (clients: Client[], name: string): Client | undefined
   return clients.find((client) => client.name.trim().toLowerCase() === normalizedName);
 };
 
-const resolveAverageTicket = (netSales: number, diners: number): number => {
-  const safeDiners = Math.max(1, diners);
-  return Math.round(netSales / safeDiners);
-};
+const resolveDashboardSnapshot = (clients: Client[], salesHistory: SalesRecord[]) =>
+  buildDashboardSnapshot(clients, salesHistory);
 
 export const createInitialState = (): RestaurantState => {
   const initialInventory = INITIAL_INVENTORY;
+  const initialSalesHistory = INITIAL_SALES_HISTORY;
+  const initialDashboardSnapshot = resolveDashboardSnapshot(CLIENTS, initialSalesHistory);
 
   return {
     activeTab: INITIAL_ACTIVE_TAB,
@@ -314,8 +389,9 @@ export const createInitialState = (): RestaurantState => {
     reservations: INITIAL_RESERVATIONS,
     clients: CLIENTS,
     tables: TABLES,
+    salesHistory: initialSalesHistory,
     serviceContext: INITIAL_SERVICE_CONTEXT,
-    dashboard: INITIAL_DASHBOARD_SNAPSHOT,
+    dashboard: initialDashboardSnapshot,
     inventoryMainTab: "kitchen",
     kitchenInventoryTab: "dishes",
     clientFilter: "clients",
@@ -392,7 +468,10 @@ export const restaurantReducer = (
             createNotification(
               "stock",
               "Stock Insuficiente",
-              `No hay stock disponible para ${action.payload.name}.`
+              `No hay stock disponible para ${action.payload.name}.`,
+              false,
+              "Ahora",
+              { navigateTo: "inventory" }
             ),
           ]),
         };
@@ -444,7 +523,10 @@ export const restaurantReducer = (
             createNotification(
               "stock",
               "Stock Insuficiente",
-              "La comanda no pudo confirmarse porque no hay stock disponible."
+              "La comanda no pudo confirmarse porque no hay stock disponible.",
+              false,
+              "Ahora",
+              { navigateTo: "inventory" }
             ),
           ]),
           ui: { ...state.ui, showCheckout: false },
@@ -455,6 +537,7 @@ export const restaurantReducer = (
       const cartWasAdjusted = hasCartChanged(state.cart, effectiveCart);
       const nextInventory = applyCheckoutToInventory(state.inventory, effectiveCart);
       const stockNotifications = createStockTransitionNotifications(state.inventory, nextInventory);
+      const nextSalesHistory = [createSalesRecord(checkoutTotal), ...state.salesHistory];
       const newKitchenOrderId = createKitchenOrderId(state.kitchenOrders);
       const nextKitchenOrder = {
         id: newKitchenOrderId,
@@ -464,38 +547,42 @@ export const restaurantReducer = (
         waiter: "Jean-Luc P.",
         notes: "Prioridad alta",
       };
-      const nextNetSales = state.dashboard.netSales + checkoutTotal;
-      const addedDiners = Math.max(2, effectiveCart.reduce((acc, item) => acc + item.qty, 0));
-      const nextDiners = state.dashboard.diners + addedDiners;
+      const nextDashboard = resolveDashboardSnapshot(state.clients, nextSalesHistory);
 
       return {
         ...state,
         inventory: nextInventory,
         kitchenOrders: [nextKitchenOrder, ...state.kitchenOrders],
+        salesHistory: nextSalesHistory,
         cart: [],
-        dashboard: {
-          ...state.dashboard,
-          netSales: nextNetSales,
-          diners: nextDiners,
-          averageTicket: resolveAverageTicket(nextNetSales, nextDiners),
-        },
-        notifications: withPrependedNotifications(state.notifications, [
-          createNotification(
-            "success",
-            "Orden Confirmada",
-            `Comanda #${newKitchenOrderId} enviada a cocina. Total ${formatCurrency(checkoutTotal, state.currencyCode)}.`
-          ),
-          ...(cartWasAdjusted
-            ? [
-                createNotification(
-                  "stock",
-                  "Comanda Ajustada",
-                  "Algunos items se ajustaron automaticamente por stock disponible."
-                ),
-              ]
-            : []),
-          ...stockNotifications,
-        ]),
+        dashboard: nextDashboard,
+        notifications: withInventoryAwareNotifications(
+          state.notifications,
+          [
+            createNotification(
+              "success",
+              "Orden Confirmada",
+              `Comanda #${newKitchenOrderId} enviada a cocina. Total ${formatCurrency(checkoutTotal, state.currencyCode)}.`,
+              false,
+              "Ahora",
+              { navigateTo: "kitchen" }
+            ),
+            ...(cartWasAdjusted
+              ? [
+                  createNotification(
+                    "stock",
+                    "Comanda Ajustada",
+                    "Algunos items se ajustaron automaticamente por stock disponible.",
+                    false,
+                    "Ahora",
+                    { navigateTo: "inventory" }
+                  ),
+                ]
+              : []),
+            ...stockNotifications,
+          ],
+          nextInventory
+        ),
         ui: { ...state.ui, showCheckout: false },
       };
     }
@@ -608,14 +695,20 @@ export const restaurantReducer = (
             createNotification(
               "info",
               "Reserva Actualizada",
-              `La reserva de ${action.payload.name} fue actualizada.`
+              `La reserva de ${action.payload.name} fue actualizada.`,
+              false,
+              "Ahora",
+              { navigateTo: "reservations" }
             ),
             ...(!canUseRequestedTable && requestedTable !== targetReservation.table
               ? [
                   createNotification(
                     "stock",
                     "Mesa No Disponible",
-                    `Se mantuvo la mesa actual porque la mesa ${String(requestedTable)} no estaba disponible.`
+                    `Se mantuvo la mesa actual porque la mesa ${String(requestedTable)} no estaba disponible.`,
+                    false,
+                    "Ahora",
+                    { navigateTo: "reservations" }
                   ),
                 ]
               : []),
@@ -660,12 +753,18 @@ export const restaurantReducer = (
             ? createNotification(
                 "vip",
                 "Nueva Reserva VIP",
-                `Reserva prioritaria para ${action.payload.name} registrada.`
+                `Reserva prioritaria para ${action.payload.name} registrada.`,
+                false,
+                "Ahora",
+                { navigateTo: "reservations" }
               )
             : createNotification(
                 "info",
                 "Nueva Reserva",
-                `Reserva para ${action.payload.name} a las ${action.payload.time}.`
+                `Reserva para ${action.payload.name} a las ${action.payload.time}.`,
+                false,
+                "Ahora",
+                { navigateTo: "reservations" }
               ),
         ]),
         ui: {
@@ -704,10 +803,11 @@ export const restaurantReducer = (
         ...state,
         inventory: nextInventory,
         cart: reconcileCartWithInventory(state.cart, nextInventory),
-        notifications:
-          stockNotifications.length === 0
-            ? state.notifications
-            : withPrependedNotifications(state.notifications, stockNotifications),
+        notifications: withInventoryAwareNotifications(
+          state.notifications,
+          stockNotifications,
+          nextInventory
+        ),
       };
     }
 
@@ -742,13 +842,27 @@ export const restaurantReducer = (
         id: nextInventoryId,
         ...action.payload,
       };
+      const nextInventory = [...state.inventory, nextItem];
+      const stockNotification = createStockNotificationForItem(nextItem);
 
       return {
         ...state,
-        inventory: [...state.inventory, nextItem],
-        notifications: withPrependedNotifications(state.notifications, [
-          createNotification("success", "Inventario Actualizado", `${nextItem.name} fue registrado.`),
-        ]),
+        inventory: nextInventory,
+        notifications: withInventoryAwareNotifications(
+          state.notifications,
+          [
+            createNotification(
+              "success",
+              "Inventario Actualizado",
+              `${nextItem.name} fue registrado.`,
+              false,
+              "Ahora",
+              { navigateTo: "inventory" }
+            ),
+            ...(stockNotification ? [stockNotification] : []),
+          ],
+          nextInventory
+        ),
         ui: { ...state.ui, showInventoryCreateModal: false },
       };
     }
@@ -796,18 +910,27 @@ export const restaurantReducer = (
       const editingClientId = state.ui.clientModal.targetClientId;
 
       if (typeof editingClientId === "number") {
+        const nextClients = state.clients.map((client) =>
+          client.id === editingClientId
+            ? {
+                ...client,
+                ...action.payload,
+              }
+            : client
+        );
         return {
           ...state,
-          clients: state.clients.map((client) =>
-            client.id === editingClientId
-              ? {
-                  ...client,
-                  ...action.payload,
-                }
-              : client
-          ),
+          clients: nextClients,
+          dashboard: resolveDashboardSnapshot(nextClients, state.salesHistory),
           notifications: withPrependedNotifications(state.notifications, [
-            createNotification("info", "Cliente Actualizado", `${action.payload.name} fue actualizado.`),
+            createNotification(
+              "info",
+              "Cliente Actualizado",
+              `${action.payload.name} fue actualizado.`,
+              false,
+              "Ahora",
+              { navigateTo: "clients" }
+            ),
           ]),
           ui: {
             ...state.ui,
@@ -830,18 +953,30 @@ export const restaurantReducer = (
         lastVisit: "Hoy",
         history: [],
       };
+      const nextClients = [...state.clients, nextClient];
 
       return {
         ...state,
-        clients: [...state.clients, nextClient],
+        clients: nextClients,
+        dashboard: resolveDashboardSnapshot(nextClients, state.salesHistory),
         notifications: withPrependedNotifications(state.notifications, [
           nextClient.tier === "Gold"
             ? createNotification(
                 "vip",
                 "Nuevo Cliente VIP",
-                `${nextClient.name} fue agregado como miembro Gold.`
+                `${nextClient.name} fue agregado como miembro Gold.`,
+                false,
+                "Ahora",
+                { navigateTo: "clients" }
               )
-            : createNotification("info", "Nuevo Cliente", `${nextClient.name} fue agregado.`),
+            : createNotification(
+                "info",
+                "Nuevo Cliente",
+                `${nextClient.name} fue agregado.`,
+                false,
+                "Ahora",
+                { navigateTo: "clients" }
+              ),
         ]),
         ui: {
           ...state.ui,
@@ -886,20 +1021,26 @@ export const restaurantReducer = (
 
     case ACTIONS.MARK_NOTIFICATION_AS_READ: {
       const notification = state.notifications.find((item) => item.id === action.payload);
+      const nextActiveTab = notification?.meta?.navigateTo
+        ? notification.meta.navigateTo
+        : notification?.type === "stock"
+          ? "inventory"
+          : notification?.type === "vip"
+            ? "reservations"
+            : notification?.type === "success" || notification?.type === "info"
+              ? "kitchen"
+              : state.activeTab;
+      const nextNotifications =
+        notification?.meta?.dismissOnRead === true
+          ? state.notifications.filter((item) => item.id !== action.payload)
+          : state.notifications.map((item) =>
+              item.id === action.payload ? { ...item, read: true } : item
+            );
 
       return {
         ...state,
-        notifications: state.notifications.map((item) =>
-          item.id === action.payload ? { ...item, read: true } : item
-        ),
-        activeTab:
-          notification?.type === "stock"
-            ? "inventory"
-            : notification?.type === "vip"
-              ? "reservations"
-              : notification?.type === "success" || notification?.type === "info"
-                ? "kitchen"
-                : state.activeTab,
+        notifications: nextNotifications,
+        activeTab: nextActiveTab,
         ui: { ...state.ui, showNotificationPanel: false },
       };
     }
@@ -976,7 +1117,14 @@ export const restaurantReducer = (
               : table
           ),
           notifications: withPrependedNotifications(state.notifications, [
-            createNotification("info", "Mesa Disponible", `Mesa ${tableId} habilitada para servicio.`),
+            createNotification(
+              "info",
+              "Mesa Disponible",
+              `Mesa ${tableId} habilitada para servicio.`,
+              false,
+              "Ahora",
+              { navigateTo: "tables" }
+            ),
           ]),
           ui: closeTableConfirmation(state.ui),
         };
@@ -1006,7 +1154,10 @@ export const restaurantReducer = (
           createNotification(
             "info",
             "Mesa en Limpieza",
-            `Mesa ${tableId} paso a mantenimiento luego del servicio.`
+            `Mesa ${tableId} paso a mantenimiento luego del servicio.`,
+            false,
+            "Ahora",
+            { navigateTo: "tables" }
           ),
         ]),
         ui: closeTableConfirmation(state.ui),
@@ -1047,7 +1198,10 @@ export const restaurantReducer = (
             createNotification(
               "stock",
               "Sin Stock Para Servicio",
-              `No se pudo iniciar servicio en mesa ${tableId} por falta de stock.`
+              `No se pudo iniciar servicio en mesa ${tableId} por falta de stock.`,
+              false,
+              "Ahora",
+              { navigateTo: "inventory" }
             ),
           ]),
         };
@@ -1057,6 +1211,7 @@ export const restaurantReducer = (
       const effectiveTotal = calculateCartTotal(effectiveItems);
       const nextInventory = applyCheckoutToInventory(state.inventory, effectiveItems);
       const stockNotifications = createStockTransitionNotifications(state.inventory, nextInventory);
+      const nextSalesHistory = [createSalesRecord(effectiveTotal), ...state.salesHistory];
       const kitchenOrderId = `T-${tableId}`;
       const nextKitchenOrders = (() => {
         const existingOrderIndex = state.kitchenOrders.findIndex((order) => order.id === kitchenOrderId);
@@ -1121,14 +1276,13 @@ export const restaurantReducer = (
           ],
         };
       });
-
-      const nextNetSales = state.dashboard.netSales + effectiveTotal;
-      const nextDiners = state.dashboard.diners + guestsInContext;
+      const nextDashboard = resolveDashboardSnapshot(nextClients, nextSalesHistory);
 
       return {
         ...state,
         inventory: nextInventory,
         kitchenOrders: nextKitchenOrders,
+        salesHistory: nextSalesHistory,
         reservations: state.reservations.map((reservation) =>
           reservation.id === reservationId ? { ...reservation, status: "en curso" } : reservation
         ),
@@ -1148,29 +1302,34 @@ export const restaurantReducer = (
             : table
         ),
         clients: nextClients,
-        dashboard: {
-          ...state.dashboard,
-          netSales: nextNetSales,
-          diners: nextDiners,
-          averageTicket: resolveAverageTicket(nextNetSales, nextDiners),
-        },
-        notifications: withPrependedNotifications(state.notifications, [
-          createNotification(
-            "success",
-            "Servicio Iniciado",
-            `Mesa ${tableId} ocupada. Comanda enviada a cocina.`
-          ),
-          ...(itemsWereAdjusted
-            ? [
-                createNotification(
-                  "stock",
-                  "Comanda Ajustada",
-                  "Se ajustaron cantidades por disponibilidad real de stock."
-                ),
-              ]
-            : []),
-          ...stockNotifications,
-        ]),
+        dashboard: nextDashboard,
+        notifications: withInventoryAwareNotifications(
+          state.notifications,
+          [
+            createNotification(
+              "success",
+              "Servicio Iniciado",
+              `Mesa ${tableId} ocupada. Comanda enviada a cocina.`,
+              false,
+              "Ahora",
+              { navigateTo: "tables", dismissOnRead: true }
+            ),
+            ...(itemsWereAdjusted
+              ? [
+                  createNotification(
+                    "stock",
+                    "Comanda Ajustada",
+                    "Se ajustaron cantidades por disponibilidad real de stock.",
+                    false,
+                    "Ahora",
+                    { navigateTo: "inventory" }
+                  ),
+                ]
+              : []),
+            ...stockNotifications,
+          ],
+          nextInventory
+        ),
         orderTakingContext: null,
         activeTab: "tables",
       };
@@ -1202,7 +1361,14 @@ export const restaurantReducer = (
         ...state,
         kitchenOrders: removeKitchenOrder(state.kitchenOrders, orderIdToComplete),
         notifications: withPrependedNotifications(state.notifications, [
-          createNotification("success", "Servicio Completado", `Orden ${orderIdToComplete} servida.`),
+          createNotification(
+            "success",
+            "Servicio Completado",
+            `Orden ${orderIdToComplete} servida.`,
+            false,
+            "Ahora",
+            { navigateTo: "kitchen" }
+          ),
         ]),
         ui: closeKitchenModal(state.ui),
       };
