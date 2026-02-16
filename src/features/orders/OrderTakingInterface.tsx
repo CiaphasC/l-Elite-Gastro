@@ -1,15 +1,10 @@
 import { useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  BoxSelect,
-  Minus,
-  Plus,
-  Receipt,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, BoxSelect, Minus, Plus, Receipt } from "lucide-react";
+import { resolveKitchenOrderSequence, resolveKitchenOrderTableId } from "@/domain/orders";
 import type {
   CartItem,
   KitchenOrder,
+  KitchenOrderItem,
   MenuCategory,
   MenuItem,
   OrderTakingConfirmationPayload,
@@ -27,31 +22,84 @@ interface OrderTakingInterfaceProps {
   onConfirmOrder: (payload: OrderTakingConfirmationPayload) => void;
 }
 
+interface HistoricalOrderLine {
+  key: string;
+  name: string;
+  qty: number;
+  price: number;
+  img: string;
+  lineTotal: number;
+}
+
+interface HistoricalOrderBatch {
+  id: string;
+  sequence: number;
+  waiter: string;
+  notes?: string;
+  items: HistoricalOrderLine[];
+  subtotal: number;
+}
+
 const serviceFeeRate = 0.1;
+const fallbackItemImage =
+  "https://images.unsplash.com/photo-1546241072-48010ad28c2c?auto=format&fit=crop&q=80&w=800";
 
-const hydrateCartFromKitchenOrder = (
+const resolveOrderLineDisplay = (
+  line: KitchenOrderItem,
+  inventory: MenuItem[]
+): HistoricalOrderLine => {
+  const inventoryMatch =
+    (typeof line.itemId === "number"
+      ? inventory.find((item) => item.id === line.itemId)
+      : undefined) ?? inventory.find((item) => item.name === line.name);
+  const itemPrice = line.price ?? inventoryMatch?.price ?? 0;
+  const itemImg = line.img ?? inventoryMatch?.img ?? fallbackItemImage;
+
+  return {
+    key: `${line.itemId ?? line.name}-${line.qty}`,
+    name: line.name,
+    qty: line.qty,
+    price: itemPrice,
+    img: itemImg,
+    lineTotal: itemPrice * line.qty,
+  };
+};
+
+const buildHistoricalBatches = (
   tableId: number,
-  inventory: MenuItem[],
-  kitchenOrders: KitchenOrder[]
-): CartItem[] => {
-  const existingOrder = kitchenOrders.find((order) => order.id === `T-${tableId}`);
-  if (!existingOrder) {
-    return [];
-  }
-
-  return existingOrder.items
-    .map((orderLine) => {
-      const inventoryItem = inventory.find((item) => item.name === orderLine.name);
-      if (!inventoryItem) {
-        return null;
+  kitchenOrders: KitchenOrder[],
+  inventory: MenuItem[]
+): HistoricalOrderBatch[] => {
+  const ordersByTable = kitchenOrders
+    .filter((order) => resolveKitchenOrderTableId(order) === tableId)
+    .map((order, index) => ({
+      order,
+      originalIndex: index,
+      sequence: resolveKitchenOrderSequence(order),
+    }))
+    .sort((left, right) => {
+      const leftSequence = left.sequence ?? Number.MAX_SAFE_INTEGER;
+      const rightSequence = right.sequence ?? Number.MAX_SAFE_INTEGER;
+      if (leftSequence === rightSequence) {
+        return left.originalIndex - right.originalIndex;
       }
+      return leftSequence - rightSequence;
+    });
 
-      return {
-        ...inventoryItem,
-        qty: orderLine.qty,
-      } satisfies CartItem;
-    })
-    .filter((item): item is CartItem => item !== null);
+  return ordersByTable.map(({ order, sequence }, index) => {
+    const resolvedSequence = typeof sequence === "number" && sequence > 0 ? sequence : index + 1;
+    const lines = order.items.map((line) => resolveOrderLineDisplay(line, inventory));
+    const subtotal = lines.reduce((acc, line) => acc + line.lineTotal, 0);
+
+    return {
+      id: order.id,
+      sequence: resolvedSequence,
+      waiter: order.waiter,
+      notes: order.notes,
+      items: lines,
+      subtotal,
+    };
+  });
 };
 
 const OrderTakingInterface = ({
@@ -70,9 +118,13 @@ const OrderTakingInterface = ({
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory>(
     categories[0] ?? "Entrantes"
   );
-  const [localCart, setLocalCart] = useState<CartItem[]>(() =>
-    hydrateCartFromKitchenOrder(context.tableId, inventory, kitchenOrders)
+  const [localCart, setLocalCart] = useState<CartItem[]>([]);
+
+  const historicalBatches = useMemo(
+    () => buildHistoricalBatches(context.tableId, kitchenOrders, inventory),
+    [context.tableId, kitchenOrders, inventory]
   );
+
   const effectiveSelectedCategory = categories.includes(selectedCategory)
     ? selectedCategory
     : (categories[0] ?? "Entrantes");
@@ -118,6 +170,10 @@ const OrderTakingInterface = ({
 
   const subtotal = localCart.reduce((acc, item) => acc + item.price * item.qty, 0);
   const total = subtotal + subtotal * serviceFeeRate;
+  const historicalSubtotal = historicalBatches.reduce((acc, batch) => acc + batch.subtotal, 0);
+  const confirmButtonLabel =
+    historicalBatches.length > 0 ? "Agregar Orden Separada" : "Iniciar Servicio y Orden";
+  const newOrderTitle = historicalBatches.length > 0 ? "Nueva Orden" : "Orden Actual";
 
   return (
     <div className="fixed inset-0 z-[200] flex flex-col overflow-hidden bg-[#050505] md:flex-row">
@@ -243,41 +299,124 @@ const OrderTakingInterface = ({
           <p className="text-xs text-zinc-500">Confirma los detalles antes de enviar a cocina.</p>
         </div>
 
-        <div className="custom-scroll flex-1 space-y-4 overflow-y-auto p-6">
-          {localCart.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center text-zinc-600 opacity-50">
-              <BoxSelect size={48} className="mb-4 stroke-1" />
-              <p className="text-sm font-medium">Selecciona productos del menu</p>
-            </div>
-          ) : (
-            localCart.map((item) => (
-              <div
-                key={item.id}
-                className="animate-in slide-in-from-right-4 flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-3 duration-300"
-              >
-                <img src={item.img} className="h-12 w-12 rounded-lg object-cover opacity-80" alt={item.name} />
-                <div className="min-w-0 flex-1">
-                  <h5 className="truncate text-sm text-white">{item.name}</h5>
-                  <p className="font-mono text-xs text-[#E5C07B]">{formatCurrency(item.price, currencyCode)}</p>
-                </div>
-                <div className="flex items-center rounded-lg border border-white/5 bg-black/40">
-                  <button onClick={() => updateQty(item.id, -1)} className="p-1.5 transition-colors hover:text-[#E5C07B]">
-                    <Minus size={12} />
-                  </button>
-                  <span className="w-6 text-center text-xs font-mono">{item.qty}</span>
-                  <button
-                    onClick={() => updateQty(item.id, 1)}
-                    className={`p-1.5 transition-colors ${
-                      item.qty >= item.stock ? "cursor-not-allowed text-zinc-600" : "hover:text-[#E5C07B]"
-                    }`}
-                    disabled={item.qty >= item.stock}
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
+        <div className="custom-scroll flex-1 overflow-y-auto p-6">
+          {historicalBatches.length > 0 && (
+            <div className="mb-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">
+                  Historial de Ordenes
+                </p>
+                <p className="text-[10px] font-mono text-zinc-500">
+                  {formatCurrency(historicalSubtotal, currencyCode)}
+                </p>
               </div>
-            ))
+
+              {historicalBatches.map((batch) => (
+                <div
+                  key={batch.id}
+                  className="space-y-2 rounded-xl border border-white/10 bg-white/[0.04] p-3"
+                >
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#E5C07B]">
+                        Orden #{String(batch.sequence).padStart(2, "0")}
+                      </p>
+                      <p className="text-[10px] uppercase tracking-widest text-zinc-500">
+                        {batch.waiter}
+                      </p>
+                    </div>
+                    <p className="font-mono text-xs text-zinc-300">
+                      {formatCurrency(batch.subtotal, currencyCode)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {batch.items.map((line) => (
+                      <div
+                        key={`${batch.id}-${line.key}`}
+                        className="flex items-center gap-3 rounded-lg border border-white/5 bg-black/30 p-2.5"
+                      >
+                        <img
+                          src={line.img}
+                          alt={line.name}
+                          className="h-10 w-10 rounded-lg object-cover opacity-90"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs text-zinc-100">{line.name}</p>
+                          <p className="font-mono text-[11px] text-zinc-500">
+                            {line.qty} x {formatCurrency(line.price, currencyCode)}
+                          </p>
+                        </div>
+                        <p className="font-mono text-xs text-[#E5C07B]">
+                          {formatCurrency(line.lineTotal, currencyCode)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {batch.notes && (
+                    <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-2.5 py-2 text-[10px] italic text-red-300">
+                      "{batch.notes}"
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
+
+          <div>
+            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">
+              {newOrderTitle}
+            </p>
+
+            {localCart.length === 0 ? (
+              <div className="flex h-[180px] flex-col items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-600 opacity-60">
+                <BoxSelect size={40} className="mb-3 stroke-1" />
+                <p className="text-xs font-medium">Selecciona productos del menu</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {localCart.map((item) => (
+                  <div
+                    key={item.id}
+                    className="animate-in slide-in-from-right-4 flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-3 duration-300"
+                  >
+                    <img
+                      src={item.img}
+                      className="h-12 w-12 rounded-lg object-cover opacity-80"
+                      alt={item.name}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <h5 className="truncate text-sm text-white">{item.name}</h5>
+                      <p className="font-mono text-xs text-[#E5C07B]">
+                        {formatCurrency(item.price, currencyCode)}
+                      </p>
+                    </div>
+                    <div className="flex items-center rounded-lg border border-white/5 bg-black/40">
+                      <button
+                        onClick={() => updateQty(item.id, -1)}
+                        className="p-1.5 transition-colors hover:text-[#E5C07B]"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span className="w-6 text-center text-xs font-mono">{item.qty}</span>
+                      <button
+                        onClick={() => updateQty(item.id, 1)}
+                        className={`p-1.5 transition-colors ${
+                          item.qty >= item.stock
+                            ? "cursor-not-allowed text-zinc-600"
+                            : "hover:text-[#E5C07B]"
+                        }`}
+                        disabled={item.qty >= item.stock}
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="border-t border-white/10 bg-[#080808] p-8">
@@ -303,7 +442,7 @@ const OrderTakingInterface = ({
           >
             <div className="absolute inset-0 translate-y-full bg-white/20 transition-transform duration-300 group-hover:translate-y-0" />
             <span className="relative flex items-center justify-center gap-2">
-              Iniciar Servicio y Orden
+              {confirmButtonLabel}
               <ArrowRight size={14} />
             </span>
           </button>

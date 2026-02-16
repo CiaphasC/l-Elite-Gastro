@@ -142,6 +142,7 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
         onClearCart={actions.clearCart}
         onUpdateQty={actions.updateCartQty}
         onOpenCheckout={actions.openCheckout}
+        onSelectTable={actions.setServiceTable}
       />
 
       <MobileCartDrawer
@@ -172,6 +173,8 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
 
       <KitchenDetailModal
         order={state.ui.kitchenModalType === "kitchen-detail" ? selectedKitchenOrder : null}
+        inventory={state.inventory}
+        currencyCode={state.currencyCode}
         onClose={actions.closeKitchenModal}
         onMarkToServe={() => {
           if (selectedKitchenOrder) {

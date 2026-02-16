@@ -1,4 +1,5 @@
 import { ChefHat } from "lucide-react";
+import { resolveKitchenOrderTableId } from "@/domain/orders";
 import type { KitchenOrder } from "@/types";
 import ModalBackdrop from "@/shared/components/ModalBackdrop";
 import ModalPanel from "@/shared/components/ModalPanel";
@@ -13,6 +14,8 @@ const KitchenServeModal = ({ order, onClose, onConfirm }: KitchenServeModalProps
   if (!order) {
     return null;
   }
+  const tableId = resolveKitchenOrderTableId(order);
+  const orderLabel = tableId ? `Mesa ${tableId}` : order.id;
 
   return (
     <ModalBackdrop onRequestClose={onClose}>
@@ -22,7 +25,7 @@ const KitchenServeModal = ({ order, onClose, onConfirm }: KitchenServeModalProps
         </div>
         <h3 className="mb-3 font-serif text-2xl text-white sm:mb-4 sm:text-3xl">Platos Listos?</h3>
         <p className="mb-8 text-sm italic text-zinc-400">
-          Confirma que la orden para <strong>{order.id}</strong> esta completa y lista para ser
+          Confirma que la orden para <strong>{orderLabel}</strong> esta completa y lista para ser
           servida.
         </p>
         <div className="flex flex-col gap-3">

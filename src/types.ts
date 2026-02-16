@@ -160,12 +160,17 @@ export interface InventoryItemPayload {
 }
 
 export interface KitchenOrderItem {
+  itemId?: number;
   name: string;
   qty: number;
+  price?: number;
+  img?: string;
 }
 
 export interface KitchenOrder {
   id: string;
+  tableId?: number;
+  sequence?: number;
   items: KitchenOrderItem[];
   time: string;
   status: KitchenStatus;
@@ -300,6 +305,7 @@ export interface RestaurantActions {
   finishBoot: () => void;
   setActiveTab: (tabId: ActiveTab) => void;
   setCurrencyCode: (currencyCode: SupportedCurrencyCode) => void;
+  setServiceTable: (tableId: number) => void;
   setSearchTerm: (searchTerm: string) => void;
   setSelectedCategory: (category: MenuCategory) => void;
   addToCart: (menuItem: MenuItem) => void;

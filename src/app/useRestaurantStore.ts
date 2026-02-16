@@ -44,6 +44,8 @@ export const useRestaurantStore = (): RestaurantStore => {
       setActiveTab: (tabId: ActiveTab) => dispatch({ type: ACTIONS.SET_ACTIVE_TAB, payload: tabId }),
       setCurrencyCode: (currencyCode: SupportedCurrencyCode) =>
         dispatch({ type: ACTIONS.SET_CURRENCY_CODE, payload: currencyCode }),
+      setServiceTable: (tableId: number) =>
+        dispatch({ type: ACTIONS.SET_SERVICE_TABLE, payload: tableId }),
       setSearchTerm: (searchTerm: string) =>
         dispatch({ type: ACTIONS.SET_SEARCH_TERM, payload: searchTerm }),
       setSelectedCategory: (category: MenuCategory) =>

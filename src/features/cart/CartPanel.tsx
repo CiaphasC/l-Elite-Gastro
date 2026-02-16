@@ -16,6 +16,7 @@ interface CartPanelProps {
   onClearCart: () => void;
   onUpdateQty: (itemId: number, delta: number) => void;
   onOpenCheckout: () => void;
+  onSelectTable: (tableId: number) => void;
 }
 
 const extractTableId = (tableLabel: string): number | "" => {
@@ -39,6 +40,7 @@ const CartPanel = ({
   onClearCart,
   onUpdateQty,
   onOpenCheckout,
+  onSelectTable,
 }: CartPanelProps) => {
   const [selectedTableId, setSelectedTableId] = useState<number | "">(() =>
     extractTableId(serviceContext.tableLabel)
@@ -69,6 +71,7 @@ const CartPanel = ({
                     return;
                   }
                   setSelectedTableId(nextValue);
+                  onSelectTable(nextValue);
                 }}
               />
             </div>

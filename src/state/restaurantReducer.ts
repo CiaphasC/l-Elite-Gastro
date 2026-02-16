@@ -2,6 +2,11 @@ import { INITIAL_ACTIVE_TAB, MENU_CATEGORIES } from "@/domain/constants";
 import { DEFAULT_CURRENCY_CODE } from "@/domain/currency";
 import { buildDashboardSnapshot, createSalesRecord } from "@/domain/dashboard";
 import {
+  buildKitchenOrderId,
+  extractTableIdFromLabel,
+  getNextKitchenOrderSequence,
+} from "@/domain/orders";
+import {
   CLIENTS,
   INITIAL_INVENTORY,
   INITIAL_KITCHEN_ORDERS,
@@ -50,6 +55,7 @@ export const ACTIONS = Object.freeze({
   BOOT_COMPLETED: "BOOT_COMPLETED",
   SET_ACTIVE_TAB: "SET_ACTIVE_TAB",
   SET_CURRENCY_CODE: "SET_CURRENCY_CODE",
+  SET_SERVICE_TABLE: "SET_SERVICE_TABLE",
   SET_SEARCH_TERM: "SET_SEARCH_TERM",
   SET_SELECTED_CATEGORY: "SET_SELECTED_CATEGORY",
   ADD_TO_CART: "ADD_TO_CART",
@@ -92,6 +98,7 @@ type RestaurantAction =
   | { type: typeof ACTIONS.BOOT_COMPLETED }
   | { type: typeof ACTIONS.SET_ACTIVE_TAB; payload: ActiveTab }
   | { type: typeof ACTIONS.SET_CURRENCY_CODE; payload: SupportedCurrencyCode }
+  | { type: typeof ACTIONS.SET_SERVICE_TABLE; payload: number }
   | { type: typeof ACTIONS.SET_SEARCH_TERM; payload: string }
   | { type: typeof ACTIONS.SET_SELECTED_CATEGORY; payload: MenuCategory }
   | { type: typeof ACTIONS.ADD_TO_CART; payload: MenuItem }
@@ -336,17 +343,30 @@ const calculateCartTotal = (items: CartItem[]): number => {
   return subtotal + subtotal * 0.1;
 };
 
-const createKitchenOrderId = (orders: { id: string }[]): string => {
-  const numericIds = orders
-    .map((order) => {
-      const [, numericPart] = order.id.split("-");
-      const parsed = Number.parseInt(numericPart ?? "", 10);
-      return Number.isFinite(parsed) ? parsed : null;
-    })
-    .filter((id): id is number => id !== null);
+const buildKitchenOrderForTable = (
+  tableId: number,
+  currentOrders: RestaurantState["kitchenOrders"],
+  items: CartItem[],
+  notes: string
+) => {
+  const sequence = getNextKitchenOrderSequence(currentOrders, tableId);
 
-  const nextNumericId = numericIds.length > 0 ? Math.max(...numericIds) + 1 : 200;
-  return `T-${nextNumericId}`;
+  return {
+    id: buildKitchenOrderId(tableId, sequence),
+    tableId,
+    sequence,
+    items: items.map((item) => ({
+      itemId: item.id,
+      name: item.name,
+      qty: item.qty,
+      price: item.price,
+      img: item.img,
+    })),
+    time: "0 min",
+    status: "pending" as const,
+    waiter: "Jean-Luc P.",
+    notes,
+  };
 };
 
 const closeKitchenModal = (uiState: UIState): UIState => ({
@@ -447,6 +467,15 @@ export const restaurantReducer = (
         currencyCode: action.payload,
       };
 
+    case ACTIONS.SET_SERVICE_TABLE:
+      return {
+        ...state,
+        serviceContext: {
+          ...state.serviceContext,
+          tableLabel: `Mesa ${action.payload}`,
+        },
+      };
+
     case ACTIONS.SET_SEARCH_TERM:
       return {
         ...state,
@@ -538,15 +567,48 @@ export const restaurantReducer = (
       const nextInventory = applyCheckoutToInventory(state.inventory, effectiveCart);
       const stockNotifications = createStockTransitionNotifications(state.inventory, nextInventory);
       const nextSalesHistory = [createSalesRecord(checkoutTotal), ...state.salesHistory];
-      const newKitchenOrderId = createKitchenOrderId(state.kitchenOrders);
-      const nextKitchenOrder = {
-        id: newKitchenOrderId,
-        items: effectiveCart.map((item) => ({ name: item.name, qty: item.qty })),
-        time: "0 min",
-        status: "pending" as const,
-        waiter: "Jean-Luc P.",
-        notes: "Prioridad alta",
-      };
+      const selectedTableId = extractTableIdFromLabel(state.serviceContext.tableLabel);
+      const checkoutTableId = selectedTableId ?? state.tables[0]?.id ?? 101;
+      const nextKitchenOrder = buildKitchenOrderForTable(
+        checkoutTableId,
+        state.kitchenOrders,
+        effectiveCart,
+        "Orden tomada en recibo"
+      );
+      const shouldConfirmReservation = (reservationStatus: (typeof state.reservations)[number]["status"]) =>
+        reservationStatus !== "confirmado" &&
+        reservationStatus !== "en curso" &&
+        reservationStatus !== "completado";
+
+      const reservationWasConfirmed = state.reservations.some(
+        (reservation) =>
+          reservation.table === checkoutTableId && shouldConfirmReservation(reservation.status)
+      );
+
+      const nextReservations: RestaurantState["reservations"] = state.reservations.map(
+        (reservation) =>
+          reservation.table === checkoutTableId && shouldConfirmReservation(reservation.status)
+            ? { ...reservation, status: "confirmado" as const }
+            : reservation
+      );
+
+      const confirmedReservation = nextReservations.find(
+        (reservation) => reservation.table === checkoutTableId && reservation.status === "confirmado"
+      );
+      const hasReservationForCheckoutTable = nextReservations.some(
+        (reservation) => reservation.table === checkoutTableId
+      );
+      const nextTables: RestaurantState["tables"] = hasReservationForCheckoutTable
+        ? state.tables.map((table) =>
+            table.id === checkoutTableId && table.status !== "ocupada"
+              ? {
+                  ...table,
+                  status: "reservada" as const,
+                  guests: confirmedReservation?.guests ?? table.guests,
+                }
+              : table
+          )
+        : state.tables;
       const nextDashboard = resolveDashboardSnapshot(state.clients, nextSalesHistory);
 
       return {
@@ -554,6 +616,8 @@ export const restaurantReducer = (
         inventory: nextInventory,
         kitchenOrders: [nextKitchenOrder, ...state.kitchenOrders],
         salesHistory: nextSalesHistory,
+        reservations: nextReservations,
+        tables: nextTables,
         cart: [],
         dashboard: nextDashboard,
         notifications: withInventoryAwareNotifications(
@@ -562,11 +626,23 @@ export const restaurantReducer = (
             createNotification(
               "success",
               "Orden Confirmada",
-              `Comanda #${newKitchenOrderId} enviada a cocina. Total ${formatCurrency(checkoutTotal, state.currencyCode)}.`,
+              `Comanda #${nextKitchenOrder.id} enviada a cocina. Total ${formatCurrency(checkoutTotal, state.currencyCode)}.`,
               false,
               "Ahora",
               { navigateTo: "kitchen" }
             ),
+            ...(reservationWasConfirmed
+              ? [
+                  createNotification(
+                    "info",
+                    "Reserva Confirmada",
+                    `La reserva de la mesa ${checkoutTableId} fue actualizada a confirmado.`,
+                    false,
+                    "Ahora",
+                    { navigateTo: "reservations" }
+                  ),
+                ]
+              : []),
             ...(cartWasAdjusted
               ? [
                   createNotification(
@@ -1093,6 +1169,10 @@ export const restaurantReducer = (
 
         return {
           ...state,
+          serviceContext: {
+            ...state.serviceContext,
+            tableLabel: `Mesa ${tableId}`,
+          },
           orderTakingContext: {
             tableId,
             clientName: reservation?.name ?? "Comensal",
@@ -1167,6 +1247,10 @@ export const restaurantReducer = (
     case ACTIONS.START_ORDER_TAKING:
       return {
         ...state,
+        serviceContext: {
+          ...state.serviceContext,
+          tableLabel: `Mesa ${action.payload.tableId}`,
+        },
         orderTakingContext: {
           tableId: action.payload.tableId,
           clientName: action.payload.clientName,
@@ -1212,26 +1296,13 @@ export const restaurantReducer = (
       const nextInventory = applyCheckoutToInventory(state.inventory, effectiveItems);
       const stockNotifications = createStockTransitionNotifications(state.inventory, nextInventory);
       const nextSalesHistory = [createSalesRecord(effectiveTotal), ...state.salesHistory];
-      const kitchenOrderId = `T-${tableId}`;
-      const nextKitchenOrders = (() => {
-        const existingOrderIndex = state.kitchenOrders.findIndex((order) => order.id === kitchenOrderId);
-        const nextOrder = {
-          id: kitchenOrderId,
-          items: effectiveItems.map((item) => ({ name: item.name, qty: item.qty })),
-          time: "0 min",
-          status: "pending" as const,
-          waiter: "Jean-Luc P.",
-          notes: existingOrderIndex >= 0 ? "Orden actualizada" : "Inicio servicio",
-        };
-
-        if (existingOrderIndex < 0) {
-          return [nextOrder, ...state.kitchenOrders];
-        }
-
-        return state.kitchenOrders.map((order, index) =>
-          index === existingOrderIndex ? nextOrder : order
-        );
-      })();
+      const nextKitchenOrder = buildKitchenOrderForTable(
+        tableId,
+        state.kitchenOrders,
+        effectiveItems,
+        "Inicio servicio"
+      );
+      const nextKitchenOrders = [nextKitchenOrder, ...state.kitchenOrders];
 
       const now = new Date();
       const dateString = `${now.getDate()} ${[
@@ -1283,9 +1354,12 @@ export const restaurantReducer = (
         inventory: nextInventory,
         kitchenOrders: nextKitchenOrders,
         salesHistory: nextSalesHistory,
-        reservations: state.reservations.map((reservation) =>
-          reservation.id === reservationId ? { ...reservation, status: "en curso" } : reservation
-        ),
+        reservations:
+          typeof reservationId === "string"
+            ? state.reservations.map((reservation) =>
+                reservation.id === reservationId ? { ...reservation, status: "en curso" } : reservation
+              )
+            : state.reservations,
         tables: state.tables.map((table) =>
           table.id === tableId
             ? {
