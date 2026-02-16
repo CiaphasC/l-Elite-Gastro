@@ -10,6 +10,20 @@ import {
 import type { RestaurantSliceCreator } from "@/store/slices/context";
 import type { TableInfo } from "@/types";
 
+const createTableReservedNotification = (
+  tableId: number,
+  reservationName: string,
+  reservationTime: string
+) =>
+  createNotification(
+    "info",
+    "Mesa Reservada",
+    `Mesa ${tableId} reservada para ${reservationName} (${reservationTime}).`,
+    false,
+    "Ahora",
+    { navigateTo: "reservations", serviceEvent: "table_reserved" }
+  );
+
 export const createReservationSlice: RestaurantSliceCreator = (set) => ({
   addReservation: (payload) =>
     set((state) => {
@@ -62,6 +76,9 @@ export const createReservationSlice: RestaurantSliceCreator = (set) => ({
             : typeof finalTable === "number"
               ? "confirmado"
               : "pendiente";
+        const reservedTableId = typeof finalTable === "number" ? finalTable : null;
+        const shouldNotifyTableReserved =
+          reservedTableId !== null && nextStatus !== "en curso" && nextStatus !== "completado";
 
         const nextReservations = state.reservations.map((reservation) =>
           reservation.id === editingReservationId
@@ -102,6 +119,9 @@ export const createReservationSlice: RestaurantSliceCreator = (set) => ({
           reservations: nextReservations,
           tables: nextTables,
           notifications: withPrependedNotifications(state.notifications, [
+            ...(shouldNotifyTableReserved
+              ? [createTableReservedNotification(reservedTableId, payload.name, payload.time)]
+              : []),
             createNotification(
               "info",
               "Reserva Actualizada",
@@ -139,16 +159,20 @@ export const createReservationSlice: RestaurantSliceCreator = (set) => ({
       );
       const nextReservations = [...reservationMutationResult.reservations];
       const createdReservation = nextReservations[nextReservations.length - 1];
+      const hasAssignedTable = typeof createdReservation?.table === "number";
+      const assignedTableId =
+        createdReservation && typeof createdReservation.table === "number"
+          ? createdReservation.table
+          : null;
 
       if (createdReservation) {
-        const hasTable = typeof createdReservation.table === "number";
         nextReservations[nextReservations.length - 1] = {
           ...createdReservation,
           status: isVipReservation
-            ? hasTable
+            ? hasAssignedTable
               ? "vip reservado"
               : "vip pendiente"
-            : hasTable
+            : hasAssignedTable
               ? "confirmado"
               : "pendiente",
         };
@@ -158,6 +182,9 @@ export const createReservationSlice: RestaurantSliceCreator = (set) => ({
         reservations: nextReservations,
         tables: reservationMutationResult.tables,
         notifications: withPrependedNotifications(state.notifications, [
+          ...(assignedTableId !== null
+            ? [createTableReservedNotification(assignedTableId, payload.name, payload.time)]
+            : []),
           isVipReservation
             ? createNotification(
                 "vip",
@@ -187,16 +214,41 @@ export const createReservationSlice: RestaurantSliceCreator = (set) => ({
 
   assignReservationTable: (reservationId: string, tableId: number) =>
     set((state) => {
+      const previousReservation = state.reservations.find(
+        (reservation) => reservation.id === reservationId
+      );
       const assignmentResult = assignTableToReservation(
         state.reservations,
         state.tables,
         reservationId,
         tableId
       );
+      const nextReservation = assignmentResult.reservations.find(
+        (reservation) => reservation.id === reservationId
+      );
+      const hasReservedTable =
+        typeof nextReservation?.table === "number" &&
+        (nextReservation.table !== previousReservation?.table ||
+          nextReservation.status !== previousReservation?.status);
+      const reservedTableId =
+        hasReservedTable && typeof nextReservation?.table === "number"
+          ? nextReservation.table
+          : null;
 
       return {
         reservations: assignmentResult.reservations,
         tables: assignmentResult.tables,
+        ...(reservedTableId !== null && nextReservation
+          ? {
+              notifications: withPrependedNotifications(state.notifications, [
+                createTableReservedNotification(
+                  reservedTableId,
+                  nextReservation.name,
+                  nextReservation.time
+                ),
+              ]),
+            }
+          : {}),
       };
     }),
 });

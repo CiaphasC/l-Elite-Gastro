@@ -8,12 +8,14 @@ import RestaurantSystem from "@/app/RestaurantSystem";
 import LandingPage from "@/features/landing/LandingPage";
 import LoadingScreen from "@/shared/components/LoadingScreen";
 import { useRestaurantActions } from "@/store/hooks";
+import type { UserRole } from "@/types";
 
 type AppView = "landing" | "system";
 
 const App = () => {
-  const { hydrateState } = useRestaurantActions();
+  const { hydrateState, setActiveTab } = useRestaurantActions();
   const [view, setView] = useState<AppView>("landing");
+  const [userRole, setUserRole] = useState<UserRole>("admin");
   const bootstrapQuery = useQuery({
     queryKey: RESTAURANT_BOOTSTRAP_QUERY_KEY,
     queryFn: fetchRestaurantBootstrap,
@@ -56,9 +58,19 @@ const App = () => {
   return (
     <div className="h-dvh w-full overflow-hidden bg-[#050505] text-zinc-300">
       {view === "landing" ? (
-        <LandingPage onEnter={() => setView("system")} />
+        <LandingPage
+          onEnter={(role) => {
+            if (bootstrapQuery.data) {
+              hydrateState(bootstrapQuery.data);
+            }
+
+            setUserRole(role);
+            setActiveTab(role === "waiter" ? "menu" : "dash");
+            setView("system");
+          }}
+        />
       ) : (
-        <RestaurantSystem onLogout={() => setView("landing")} />
+        <RestaurantSystem role={userRole} onLogout={() => setView("landing")} />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { gsap } from "gsap";
 import {
+  deriveNotificationsByRole,
   deriveSelectedClient,
   deriveSelectedKitchenOrder,
   deriveUnreadNotificationsCount,
@@ -12,10 +13,11 @@ import {
 import { useCartTotals } from "@/shared/hooks/useCartTotals";
 import CartPanel from "@/features/cart/CartPanel";
 import MobileCartDrawer from "@/features/cart/MobileCartDrawer";
-import { featureRegistry } from "@/features/registry";
+import { featureRegistry, orderedFeatureModules } from "@/features/registry";
 import Header from "@/features/layout/Header";
 import MobileTabNav from "@/features/layout/MobileTabNav";
 import Sidebar from "@/features/layout/Sidebar";
+import WaiterDock from "@/features/layout/WaiterDock";
 import CheckoutModal from "@/features/modals/CheckoutModal";
 import KitchenDetailModal from "@/features/modals/KitchenDetailModal";
 import KitchenServeModal from "@/features/modals/KitchenServeModal";
@@ -25,12 +27,16 @@ import AddInventoryModal from "@/features/modals/AddInventoryModal";
 import ClientModal from "@/features/modals/ClientModal";
 import ClientDetailView from "@/features/clients/ClientDetailView";
 import OrderTakingInterface from "@/features/orders/OrderTakingInterface";
+import type { ActiveTab, UserRole } from "@/types";
 
 interface RestaurantSystemProps {
+  role: UserRole;
   onLogout: () => void;
 }
 
-const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
+const WAITER_ALLOWED_TABS: readonly ActiveTab[] = ["menu", "tables", "reservations"];
+
+const RestaurantSystem = ({ role, onLogout }: RestaurantSystemProps) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mainContentRef = useRef<HTMLElement | null>(null);
   const isLogoutTransitionRunningRef = useRef(false);
@@ -135,9 +141,13 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
     });
   };
 
+  const visibleNotifications = useMemo(
+    () => deriveNotificationsByRole(notifications, role),
+    [notifications, role]
+  );
   const unreadNotificationsCount = useMemo(
-    () => deriveUnreadNotificationsCount(notifications),
-    [notifications]
+    () => deriveUnreadNotificationsCount(visibleNotifications),
+    [visibleNotifications]
   );
   const cartTotals = useCartTotals(cart);
   const selectedKitchenOrder = useMemo(
@@ -148,7 +158,24 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
     () => deriveSelectedClient(clients, selectedClientId),
     [clients, selectedClientId]
   );
-  const activeFeature = featureRegistry[activeTab];
+  const allowedTabs = useMemo<readonly ActiveTab[]>(
+    () =>
+      role === "waiter"
+        ? WAITER_ALLOWED_TABS
+        : orderedFeatureModules.map((featureModule) => featureModule.id),
+    [role]
+  );
+  const allowedTabSet = useMemo(() => new Set<ActiveTab>(allowedTabs), [allowedTabs]);
+  const effectiveActiveTab = allowedTabSet.has(activeTab) ? activeTab : allowedTabs[0];
+  const activeFeature = featureRegistry[effectiveActiveTab];
+  const isAdmin = role === "admin";
+  const handleTabChange = (tabId: ActiveTab) => {
+    if (!allowedTabSet.has(tabId)) {
+      return;
+    }
+
+    actions.setActiveTab(tabId);
+  };
   const editingClient =
     typeof clientModal.targetClientId === "number"
       ? clients.find((client) => client.id === clientModal.targetClientId) ?? null
@@ -160,7 +187,23 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
   }`;
   const clientModalKey = `client-${clientModal.isOpen ? "open" : "closed"}-${clientModal.mode}-${clientModal.targetClientId ?? "new"}-${clientModal.targetSegment}`;
 
-  if (selectedClient) {
+  useEffect(() => {
+    if (allowedTabSet.has(activeTab)) {
+      return;
+    }
+
+    actions.setActiveTab(allowedTabs[0]);
+  }, [actions, activeTab, allowedTabSet, allowedTabs]);
+
+  useEffect(() => {
+    if (role !== "waiter" || !selectedClient) {
+      return;
+    }
+
+    actions.closeClientDetail();
+  }, [actions, role, selectedClient]);
+
+  if (selectedClient && isAdmin) {
     return (
       <div className="relative flex h-dvh min-h-dvh select-none overflow-hidden bg-[#050505] text-zinc-300">
         <div className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full overflow-hidden">
@@ -189,16 +232,23 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
         <div className="absolute bottom-[-10%] right-[-10%] h-[40%] w-[40%] rounded-full bg-[#E5C07B]/5 blur-[120px]" />
       </div>
 
-      <Sidebar activeTab={activeTab} onTabChange={actions.setActiveTab} onLogout={handleLogout} />
+      {isAdmin && (
+        <Sidebar
+          activeTab={effectiveActiveTab}
+          onTabChange={handleTabChange}
+          onLogout={handleLogout}
+        />
+      )}
 
       <main
         ref={mainContentRef}
         className="custom-scroll relative z-10 flex-1 overflow-y-auto px-4 pb-28 pt-5 sm:px-6 sm:pt-6 lg:p-10 lg:pb-10"
       >
         <Header
+          role={role}
           title={activeFeature.title}
           showSearch={activeFeature.searchEnabled}
-          notifications={notifications}
+          notifications={visibleNotifications}
           unreadNotificationsCount={unreadNotificationsCount}
           isNotificationPanelOpen={showNotificationPanel}
           searchTerm={searchTerm}
@@ -208,60 +258,72 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
           onClearNotifications={actions.clearNotifications}
           onReadNotification={actions.markNotificationAsRead}
         />
-        <MobileTabNav activeTab={activeTab} onTabChange={actions.setActiveTab} />
+        {isAdmin && (
+          <MobileTabNav activeTab={effectiveActiveTab} onTabChange={handleTabChange} />
+        )}
         {activeFeature.render()}
       </main>
 
-      <CartPanel
-        cartItems={cart}
-        currencyCode={currencyCode}
-        subtotal={cartTotals.subtotal}
-        serviceFee={cartTotals.serviceFee}
-        total={cartTotals.total}
-        serviceContext={serviceContext}
-        tables={tables}
-        onClearCart={actions.clearCart}
-        onUpdateQty={actions.updateCartQty}
-        onOpenCheckout={actions.openCheckout}
-        onSelectTable={actions.setServiceTable}
-      />
+      {isAdmin && (
+        <CartPanel
+          cartItems={cart}
+          currencyCode={currencyCode}
+          subtotal={cartTotals.subtotal}
+          serviceFee={cartTotals.serviceFee}
+          total={cartTotals.total}
+          serviceContext={serviceContext}
+          tables={tables}
+          onClearCart={actions.clearCart}
+          onUpdateQty={actions.updateCartQty}
+          onOpenCheckout={actions.openCheckout}
+          onSelectTable={actions.setServiceTable}
+        />
+      )}
 
-      <MobileCartDrawer
-        cartItems={cart}
-        currencyCode={currencyCode}
-        itemCount={cartTotals.itemCount}
-        subtotal={cartTotals.subtotal}
-        serviceFee={cartTotals.serviceFee}
-        total={cartTotals.total}
-        onClearCart={actions.clearCart}
-        onUpdateQty={actions.updateCartQty}
-        onOpenCheckout={actions.openCheckout}
-      />
+      {isAdmin && (
+        <MobileCartDrawer
+          cartItems={cart}
+          currencyCode={currencyCode}
+          itemCount={cartTotals.itemCount}
+          subtotal={cartTotals.subtotal}
+          serviceFee={cartTotals.serviceFee}
+          total={cartTotals.total}
+          onClearCart={actions.clearCart}
+          onUpdateQty={actions.updateCartQty}
+          onOpenCheckout={actions.openCheckout}
+        />
+      )}
 
-      <CheckoutModal
-        isOpen={showCheckout}
-        currencyCode={currencyCode}
-        total={cartTotals.total}
-        onClose={actions.closeCheckout}
-        onConfirm={actions.confirmCheckout}
-      />
+      {isAdmin && (
+        <CheckoutModal
+          isOpen={showCheckout}
+          currencyCode={currencyCode}
+          total={cartTotals.total}
+          onClose={actions.closeCheckout}
+          onConfirm={actions.confirmCheckout}
+        />
+      )}
 
-      <KitchenServeModal
-        order={kitchenModalType === "kitchen-serve" ? selectedKitchenOrder : null}
-        onClose={actions.closeKitchenModal}
-        onConfirm={() => actions.completeKitchenOrder(selectedKitchenOrder?.id)}
-      />
+      {isAdmin && (
+        <KitchenServeModal
+          order={kitchenModalType === "kitchen-serve" ? selectedKitchenOrder : null}
+          onClose={actions.closeKitchenModal}
+          onConfirm={() => actions.completeKitchenOrder(selectedKitchenOrder?.id)}
+        />
+      )}
 
-      <KitchenDetailModal
-        order={kitchenModalType === "kitchen-detail" ? selectedKitchenOrder : null}
-        currencyCode={currencyCode}
-        onClose={actions.closeKitchenModal}
-        onMarkToServe={() => {
-          if (selectedKitchenOrder) {
-            actions.openKitchenModal("kitchen-serve", selectedKitchenOrder.id);
-          }
-        }}
-      />
+      {isAdmin && (
+        <KitchenDetailModal
+          order={kitchenModalType === "kitchen-detail" ? selectedKitchenOrder : null}
+          currencyCode={currencyCode}
+          onClose={actions.closeKitchenModal}
+          onMarkToServe={() => {
+            if (selectedKitchenOrder) {
+              actions.openKitchenModal("kitchen-serve", selectedKitchenOrder.id);
+            }
+          }}
+        />
+      )}
 
       <ReservationModal
         key={reservationModalKey}
@@ -273,23 +335,27 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
         onSubmitReservation={actions.addReservation}
       />
 
-      <ClientModal
-        key={clientModalKey}
-        isOpen={clientModal.isOpen}
-        mode={clientModal.mode}
-        segment={clientModal.targetSegment}
-        initialClient={editingClient}
-        onClose={actions.closeClientModal}
-        onSubmit={actions.saveClient}
-      />
+      {isAdmin && (
+        <ClientModal
+          key={clientModalKey}
+          isOpen={clientModal.isOpen}
+          mode={clientModal.mode}
+          segment={clientModal.targetSegment}
+          initialClient={editingClient}
+          onClose={actions.closeClientModal}
+          onSubmit={actions.saveClient}
+        />
+      )}
 
-      <AddInventoryModal
-        isOpen={showInventoryCreateModal}
-        inventoryMainTab={inventoryMainTab}
-        kitchenInventoryTab={kitchenInventoryTab}
-        onClose={actions.closeInventoryCreateModal}
-        onSubmit={actions.addInventoryItem}
-      />
+      {isAdmin && (
+        <AddInventoryModal
+          isOpen={showInventoryCreateModal}
+          inventoryMainTab={inventoryMainTab}
+          kitchenInventoryTab={kitchenInventoryTab}
+          onClose={actions.closeInventoryCreateModal}
+          onSubmit={actions.addInventoryItem}
+        />
+      )}
 
       <TableConfirmationModal
         modalState={confirmationModal}
@@ -305,6 +371,14 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
           currencyCode={currencyCode}
           onCancel={actions.cancelOrderTaking}
           onConfirmOrder={actions.confirmOrderTaking}
+        />
+      )}
+
+      {!isAdmin && (
+        <WaiterDock
+          activeTab={effectiveActiveTab}
+          onTabChange={handleTabChange}
+          onLogout={handleLogout}
         />
       )}
     </div>

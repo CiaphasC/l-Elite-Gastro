@@ -1,10 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { Fingerprint, Lock, UtensilsCrossed } from "lucide-react";
 import * as THREE from "three";
+import AuthModal from "@/features/auth/AuthModal";
+import type { UserRole } from "@/types";
 
 interface LandingPageProps {
-  onEnter: () => void;
+  onEnter: (role: UserRole) => void;
 }
 
 const LANDING_PARTICLES_COUNT = 2500;
@@ -127,6 +129,7 @@ const LandingPage = ({ onEnter }: LandingPageProps) => {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const transitionRunningRef = useRef(false);
   const fieldRef = useRef<GoldDustField | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) {
@@ -141,17 +144,18 @@ const LandingPage = ({ onEnter }: LandingPageProps) => {
     };
   }, []);
 
-  const handleEnter = () => {
+  const handleAuthSuccess = (role: UserRole) => {
     if (transitionRunningRef.current) {
       return;
     }
 
+    setShowAuthModal(false);
     transitionRunningRef.current = true;
 
     const timeline = gsap.timeline({
       onComplete: () => {
         transitionRunningRef.current = false;
-        onEnter();
+        onEnter(role);
       },
     });
 
@@ -180,7 +184,7 @@ const LandingPage = ({ onEnter }: LandingPageProps) => {
     if (!contentRef.current && !mountRef.current) {
       window.setTimeout(() => {
         transitionRunningRef.current = false;
-        onEnter();
+        onEnter(role);
       }, 800);
     }
   };
@@ -227,7 +231,7 @@ const LandingPage = ({ onEnter }: LandingPageProps) => {
 
         <button
           type="button"
-          onClick={handleEnter}
+          onClick={() => setShowAuthModal(true)}
           className="group relative cursor-pointer bg-transparent px-16 py-5 transition-all hover:scale-105 active:scale-95"
         >
           <div className="absolute inset-0 rounded-full border border-[#E5C07B]/30 transition-colors duration-700 group-hover:border-[#E5C07B]/60" />
@@ -245,6 +249,12 @@ const LandingPage = ({ onEnter }: LandingPageProps) => {
           <span>v2.2 Platinum</span>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLogin={handleAuthSuccess}
+      />
     </div>
   );
 };

@@ -62,9 +62,15 @@ export type ReservationTable = number | "---";
 export type ClientTier = "Gold" | "Normal";
 export type ClientFilter = "clients" | "vip";
 export type ClientViewMode = "cards" | "table";
+export const USER_ROLE_VALUES = ["admin", "waiter"] as const;
+export type UserRole = (typeof USER_ROLE_VALUES)[number];
 export const SUPPORTED_CURRENCY_VALUES = ["ARS", "UYU", "COP", "MXN", "PEN", "USD"] as const;
 export type SupportedCurrencyCode = (typeof SUPPORTED_CURRENCY_VALUES)[number];
 export type NotificationType = "stock" | "success" | "info" | "vip";
+export type ServiceNotificationEvent =
+  | "table_available"
+  | "table_maintenance"
+  | "table_reserved";
 export type TableConfirmationAction = "cleaning" | "reservation" | "finish_service";
 export type ClientDocumentType = "DNI" | "CEDULA" | "PASAPORTE" | "CE" | "RUC";
 
@@ -193,6 +199,7 @@ export interface NotificationItem {
     stockSeverity?: "low" | "critical";
     navigateTo?: ActiveTab;
     dismissOnRead?: boolean;
+    serviceEvent?: ServiceNotificationEvent;
   };
 }
 

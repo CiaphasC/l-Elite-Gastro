@@ -11,6 +11,31 @@ interface InventoryViewProps {
   onAdjustStock: (itemId: number, delta: number) => void;
 }
 
+const STOCK_LOW_THRESHOLD = 10;
+
+const resolveStockStatus = (stockValue: number): { className: string; label: string } => {
+  const stock = Number.isFinite(stockValue) ? stockValue : 0;
+
+  if (stock <= 0) {
+    return {
+      className: "bg-zinc-600/20 text-zinc-300",
+      label: "Sin stock",
+    };
+  }
+
+  if (stock < STOCK_LOW_THRESHOLD) {
+    return {
+      className: "bg-red-500/10 text-red-400",
+      label: "Bajo",
+    };
+  }
+
+  return {
+    className: "bg-emerald-500/10 text-emerald-400",
+    label: "OK",
+  };
+};
+
 const InventoryView = ({
   items,
   inventoryMainTab,
@@ -114,7 +139,10 @@ const InventoryView = ({
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
-          {items.map((item) => (
+          {items.map((item) => {
+            const stockStatus = resolveStockStatus(item.stock);
+
+            return (
             <tr key={item.id} className="group transition-colors hover:bg-white/5">
               <td className="py-4 pl-4">
                 <div className="flex items-center gap-4">
@@ -132,11 +160,9 @@ const InventoryView = ({
               </td>
               <td className="py-4">
                 <div
-                  className={`inline-flex items-center gap-2 rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${
-                    item.stock < 10 ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"
-                  }`}
+                  className={`inline-flex items-center gap-2 rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${stockStatus.className}`}
                 >
-                  {item.stock < 10 ? "Bajo" : "OK"}
+                  {stockStatus.label}
                 </div>
               </td>
               <td className="py-4 pr-4 text-right">
@@ -156,7 +182,7 @@ const InventoryView = ({
                 </div>
               </td>
             </tr>
-          ))}
+          )})}
           {items.length === 0 && (
             <tr>
               <td colSpan={5} className="py-12 text-center italic text-zinc-500">
@@ -175,7 +201,10 @@ const InventoryView = ({
     </div>
 
     <div className="space-y-3 md:hidden">
-      {items.map((item) => (
+      {items.map((item) => {
+        const stockStatus = resolveStockStatus(item.stock);
+
+        return (
         <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="mb-3 flex items-center gap-3">
             <img src={item.img} className="h-12 w-12 rounded-lg object-cover" alt={item.name} />
@@ -189,11 +218,9 @@ const InventoryView = ({
               {item.stock} <span className="ml-1 text-[10px] text-zinc-500">{item.unit}</span>
             </p>
             <span
-              className={`rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${
-                item.stock < 10 ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"
-              }`}
+              className={`rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${stockStatus.className}`}
             >
-              {item.stock < 10 ? "Bajo" : "OK"}
+              {stockStatus.label}
             </span>
           </div>
           <div className="flex justify-end gap-2">
@@ -211,7 +238,7 @@ const InventoryView = ({
             </button>
           </div>
         </div>
-      ))}
+      )})}
 
       {items.length === 0 && (
         <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center italic text-zinc-500">

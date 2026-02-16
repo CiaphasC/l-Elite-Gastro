@@ -8,6 +8,7 @@ import type {
   MenuCategory,
   MenuItem,
   NotificationItem,
+  UserRole,
 } from "@/types";
 
 const BAR_CATEGORIES = new Set<MenuCategory>([
@@ -134,6 +135,24 @@ export const deriveSelectedKitchenOrder = (
 
 export const deriveUnreadNotificationsCount = (notifications: NotificationItem[]): number =>
   notifications.filter((notification) => !notification.read).length;
+
+export const deriveNotificationsByRole = (
+  notifications: NotificationItem[],
+  role: UserRole
+): NotificationItem[] => {
+  if (role !== "waiter") {
+    return notifications;
+  }
+
+  return notifications.filter((notification) => {
+    const event = notification.meta?.serviceEvent;
+    return (
+      event === "table_available" ||
+      event === "table_maintenance" ||
+      event === "table_reserved"
+    );
+  });
+};
 
 export const deriveSelectedClient = (clients: Client[], selectedClientId: number | null): Client | null =>
   clients.find((client) => client.id === selectedClientId) ?? null;

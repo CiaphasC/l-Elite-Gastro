@@ -2,9 +2,10 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { Bell, Search } from "lucide-react";
 import NotificationPanel from "@/features/layout/NotificationPanel";
-import type { NotificationItem } from "@/types";
+import type { NotificationItem, UserRole } from "@/types";
 
 interface HeaderProps {
+  role: UserRole;
   title: string;
   showSearch: boolean;
   notifications: NotificationItem[];
@@ -19,6 +20,7 @@ interface HeaderProps {
 }
 
 const Header = ({
+  role,
   title,
   showSearch,
   notifications,
@@ -32,6 +34,8 @@ const Header = ({
   onReadNotification,
 }: HeaderProps) => {
   const titleRef = useRef<HTMLHeadingElement | null>(null);
+  const areaLabel = role === "admin" ? "Gerencia" : "Servicio";
+  const profileRoleLabel = role === "admin" ? "Gerente" : "Maitre D'";
 
   useEffect(() => {
     if (!titleRef.current) {
@@ -60,7 +64,7 @@ const Header = ({
             <div className="mb-1 flex items-center gap-3">
               <div className="h-[1px] w-8 bg-[#E5C07B]" />
               <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#E5C07B] sm:tracking-[0.4em]">
-                Bienvenido, Maitre
+                {areaLabel}
               </span>
             </div>
             <h1
@@ -105,7 +109,9 @@ const Header = ({
               <div className="flex items-center gap-3 border-l border-white/10 pl-4 lg:gap-4 lg:pl-6">
                 <div className="hidden text-right sm:block">
                   <p className="text-sm font-medium text-white">Jean-Luc Picard</p>
-                  <p className="text-[10px] uppercase tracking-widest text-[#E5C07B]">Gerente</p>
+                  <p className="text-[10px] uppercase tracking-widest text-[#E5C07B]">
+                    {profileRoleLabel}
+                  </p>
                 </div>
                 <div className="w-10 rounded-full border border-[#E5C07B]/30 p-0.5">
                   <img

@@ -149,11 +149,11 @@ export const createCartSlice: RestaurantSliceCreator = (set) => ({
               ? [
                   createNotification(
                     "info",
-                    "Reserva Confirmada",
-                    `La reserva de la mesa ${checkoutTableId} fue actualizada a confirmado.`,
+                    "Mesa Reservada",
+                    `Mesa ${checkoutTableId} confirmada en agenda de reservas.`,
                     false,
                     "Ahora",
-                    { navigateTo: "reservations" }
+                    { navigateTo: "reservations", serviceEvent: "table_reserved" }
                   ),
                 ]
               : []),

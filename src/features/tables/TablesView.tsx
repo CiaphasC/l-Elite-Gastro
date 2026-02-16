@@ -445,7 +445,7 @@ const TablesView = ({
   };
 
   return (
-    <div className="grid max-w-5xl grid-cols-2 gap-4 py-2 animate-in fade-in duration-500 sm:gap-6 sm:py-4 md:grid-cols-3 md:gap-8">
+    <div className="grid w-full grid-cols-2 gap-4 py-2 animate-in fade-in duration-500 sm:gap-6 sm:py-4 md:grid-cols-3 md:gap-6 lg:gap-8 xl:px-8">
       {tables.map((table) => {
         const details = tableDetailsById.get(table.id) ?? null;
         const statusStyle = TABLE_STATUS_STYLE[table.status];

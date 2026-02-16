@@ -65,7 +65,7 @@ export const createTableServiceSlice: RestaurantSliceCreator = (set) => ({
               `Mesa ${tableId} habilitada para servicio.`,
               false,
               "Ahora",
-              { navigateTo: "tables" }
+              { navigateTo: "tables", serviceEvent: "table_available" }
             ),
           ]),
           ui: closeTableConfirmation(state.ui),
@@ -100,7 +100,7 @@ export const createTableServiceSlice: RestaurantSliceCreator = (set) => ({
             `Mesa ${tableId} paso a mantenimiento luego del servicio.`,
             false,
             "Ahora",
-            { navigateTo: "tables" }
+            { navigateTo: "tables", serviceEvent: "table_maintenance" }
           ),
         ]),
         ui: closeTableConfirmation(state.ui),
@@ -257,4 +257,3 @@ export const createTableServiceSlice: RestaurantSliceCreator = (set) => ({
       };
     }),
 });
-
