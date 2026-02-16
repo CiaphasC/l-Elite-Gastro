@@ -66,7 +66,7 @@ const ManagementView = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const tableSortSensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: 2 },
     })
   );
 

@@ -25,7 +25,13 @@ const SortableTableCard = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: table.id.toString() });
+  } = useSortable({
+    id: table.id.toString(),
+    transition: {
+      duration: 140,
+      easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -39,7 +45,7 @@ const SortableTableCard = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`glass-panel group relative overflow-hidden rounded-[2rem] border border-white/10 p-6 transition-all hover:border-[#E5C07B]/30 ${
+      className={`glass-panel group relative overflow-hidden rounded-[2rem] border border-white/10 p-6 transition-colors duration-300 will-change-transform hover:border-[#E5C07B]/30 ${
         isDragging ? "opacity-90 shadow-[0_18px_40px_rgba(0,0,0,0.45)]" : ""
       }`}
     >
@@ -55,7 +61,7 @@ const SortableTableCard = ({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className="cursor-grab rounded-lg border border-white/10 bg-black/20 p-2 text-zinc-500 transition-all hover:border-[#E5C07B]/30 hover:text-[#E5C07B] active:cursor-grabbing"
+            className="touch-none cursor-grab rounded-lg border border-white/10 bg-black/20 p-2.5 text-zinc-500 transition-colors duration-200 hover:border-[#E5C07B]/30 hover:text-[#E5C07B] active:cursor-grabbing"
             aria-label={`Reordenar Mesa ${displayOrder}`}
             {...attributes}
             {...listeners}
