@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
-import { BoxSelect, Carrot, ChefHat, Package, Plus, Soup, Wine } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { Carrot, ChevronDown, Edit, Plus, Soup, Upload, Wine, X } from "lucide-react";
 import ModalBackdrop from "@/shared/components/ModalBackdrop";
+import PremiumParticleBackground from "@/shared/components/PremiumParticleBackground";
 import type { InventoryItemPayload, InventoryMainTab, KitchenInventoryTab, MenuCategory } from "@/types";
 
 interface AddInventoryModalProps {
@@ -31,19 +33,23 @@ const AddInventoryModal = ({
   onClose,
   onSubmit,
 }: AddInventoryModalProps) => {
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const isClosingRef = useRef(false);
+
   const [name, setName] = useState("");
   const [category, setCategory] = useState<MenuCategory>("Entrantes");
   const [stock, setStock] = useState("0");
   const [unit, setUnit] = useState("unid");
   const [price, setPrice] = useState("0");
-  const [img, setImg] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
 
   const context = useMemo(() => {
     if (inventoryMainTab === "bar") {
       return {
-        icon: <Wine size={22} />,
+        icon: <Wine size={24} />,
         title: "Ingreso Cantina",
-        subtitle: "Barra y Cantina",
+        subtitle: "Barra & Cantina",
         categories: barCategories,
         type: "dish" as const,
       };
@@ -51,22 +57,50 @@ const AddInventoryModal = ({
 
     if (kitchenInventoryTab === "ingredients") {
       return {
-        icon: <Carrot size={22} />,
+        icon: <Carrot size={24} />,
         title: "Ingreso Insumo",
-        subtitle: "Cocina · Insumos",
+        subtitle: "Cocina • Insumos",
         categories: ingredientCategories,
         type: "ingredient" as const,
       };
     }
 
     return {
-      icon: <Soup size={22} />,
+      icon: <Soup size={24} />,
       title: "Nuevo Plato",
-      subtitle: "Cocina · Platos",
+      subtitle: "Cocina • Platos",
       categories: dishKitchenCategories,
       type: "dish" as const,
     };
   }, [inventoryMainTab, kitchenInventoryTab]);
+
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) {
+      return;
+    }
+
+    isClosingRef.current = false;
+    const timeline = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+    if (overlayRef.current) {
+      timeline.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+    }
+
+    timeline.fromTo(
+      modalRef.current,
+      { y: 50, opacity: 0, scale: 0.95 },
+      { y: 0, opacity: 1, scale: 1, duration: 0.4 },
+      overlayRef.current ? "-=0.2" : 0
+    );
+
+    return () => {
+      timeline.kill();
+    };
+  }, [isOpen]);
+
+  const effectiveCategory = context.categories.includes(category)
+    ? category
+    : context.categories[0];
 
   const resetForm = () => {
     setName("");
@@ -74,23 +108,76 @@ const AddInventoryModal = ({
     setStock("0");
     setUnit("unid");
     setPrice("0");
-    setImg("");
+    setPreview(null);
+  };
+
+  const closeWithAnimation = (onComplete: () => void) => {
+    if (isClosingRef.current) {
+      return;
+    }
+
+    isClosingRef.current = true;
+
+    if (!modalRef.current) {
+      onComplete();
+      isClosingRef.current = false;
+      return;
+    }
+
+    const timeline = gsap.timeline({
+      onComplete: () => {
+        isClosingRef.current = false;
+        onComplete();
+      },
+    });
+
+    timeline.to(modalRef.current, { y: -20, opacity: 0, duration: 0.3, ease: "power2.in" });
+    if (overlayRef.current) {
+      timeline.to(overlayRef.current, { opacity: 0, duration: 0.3, ease: "power2.in" }, "-=0.2");
+    }
+  };
+
+  const handleClose = () => {
+    closeWithAnimation(() => {
+      resetForm();
+      onClose();
+    });
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        setPreview(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onSubmit({
+
+    const payload: InventoryItemPayload = {
       name: name.trim(),
-      category,
+      category: effectiveCategory,
       stock: Number(stock),
       unit: unit.trim(),
       price: Number(price),
       type: context.type,
       img:
-        img.trim() ||
-        "https://images.unsplash.com/photo-1556910103-1c02745a30bf?auto=format&fit=crop&q=80&w=800",
+        preview ??
+        "https://images.unsplash.com/photo-1546241072-48010ad28c2c?auto=format&fit=crop&q=80&w=800",
+    };
+
+    closeWithAnimation(() => {
+      onSubmit(payload);
+      resetForm();
     });
-    resetForm();
   };
 
   if (!isOpen) {
@@ -98,12 +185,21 @@ const AddInventoryModal = ({
   }
 
   return (
-    <ModalBackdrop onRequestClose={onClose}>
-      <div className="glass-panel relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-[#E5C07B]/30 p-8 shadow-[0_0_50px_rgba(229,192,123,0.12)]">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-transparent via-[#E5C07B] to-transparent opacity-60" />
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#E5C07B]/10 blur-[80px]" />
-        </div>
+    <ModalBackdrop
+      onRequestClose={handleClose}
+      backdropRef={overlayRef}
+      backdropClassName="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      dialogClassName="w-full max-w-md"
+    >
+      <div
+        ref={modalRef}
+        className="glass-panel relative w-full overflow-hidden rounded-[2.5rem] border border-[#E5C07B]/30 p-8 shadow-[0_0_50px_rgba(229,192,123,0.1)]"
+      >
+        <PremiumParticleBackground intensity={0.3} />
+
+        <button onClick={handleClose} className="absolute right-6 top-6 z-20 text-zinc-500 transition-colors hover:text-white">
+          <X size={24} />
+        </button>
 
         <div className="relative z-10">
           <div className="mb-6 text-center">
@@ -117,6 +213,33 @@ const AddInventoryModal = ({
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
+            <div className="mb-2 flex justify-center">
+              <label className="group relative cursor-pointer">
+                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                <div
+                  className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed shadow-xl transition-all duration-300 ${
+                    preview
+                      ? "border-[#E5C07B] bg-black"
+                      : "border-zinc-700 bg-black/20 hover:border-[#E5C07B] hover:bg-[#E5C07B]/5"
+                  }`}
+                >
+                  {preview ? (
+                    <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center text-zinc-500 transition-colors group-hover:text-[#E5C07B]">
+                      <Upload size={20} className="mb-2" />
+                      <span className="text-[8px] font-bold uppercase tracking-widest">Foto</span>
+                    </div>
+                  )}
+                </div>
+                {preview && (
+                  <div className="absolute -bottom-2 -right-2 scale-90 rounded-full bg-[#E5C07B] p-1.5 text-black opacity-0 shadow-lg transition-all group-hover:scale-100 group-hover:opacity-100">
+                    <Edit size={12} />
+                  </div>
+                )}
+              </label>
+            </div>
+
             <div>
               <label className="ml-1 mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                 Nombre Producto
@@ -126,30 +249,36 @@ const AddInventoryModal = ({
                 onChange={(event) => setName(event.target.value)}
                 required
                 className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition-all placeholder:text-zinc-700 focus:border-[#E5C07B]"
-                placeholder="Ej. Lomo fino"
+                placeholder="Ej. Lomo Fino"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="ml-1 mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                  Categoria
+                  Categoría
                 </label>
-                <select
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value as MenuCategory)}
-                  className="w-full cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition-all focus:border-[#E5C07B]"
-                >
-                  {context.categories.map((value) => (
-                    <option key={value} value={value} className="bg-[#111] text-white">
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={effectiveCategory}
+                    onChange={(event) => setCategory(event.target.value as MenuCategory)}
+                    className="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition-all focus:border-[#E5C07B]"
+                  >
+                    {context.categories.map((value) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={14}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500"
+                  />
+                </div>
               </div>
               <div>
                 <label className="ml-1 mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                  Precio o Costo
+                  Precio / Costo
                 </label>
                 <input
                   value={price}
@@ -158,6 +287,7 @@ const AddInventoryModal = ({
                   min={0}
                   step="0.01"
                   className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition-all placeholder:text-zinc-700 focus:border-[#E5C07B]"
+                  placeholder="0.00"
                 />
               </div>
             </div>
@@ -181,61 +311,36 @@ const AddInventoryModal = ({
                 <label className="ml-1 mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                   Unidad
                 </label>
-                <select
-                  value={unit}
-                  onChange={(event) => setUnit(event.target.value)}
-                  className="w-full cursor-pointer rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition-all focus:border-[#E5C07B]"
-                >
-                  <option value="unid">Unidades</option>
-                  <option value="kg">Kilogramos</option>
-                  <option value="lt">Litros</option>
-                  <option value="oz">Onzas</option>
-                  <option value="gr">Gramos</option>
-                  <option value="botellas">Botellas</option>
-                  <option value="raciones">Raciones</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={unit}
+                    onChange={(event) => setUnit(event.target.value)}
+                    className="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition-all focus:border-[#E5C07B]"
+                  >
+                    <option value="unid">Unidades</option>
+                    <option value="kg">Kilogramos</option>
+                    <option value="lt">Litros</option>
+                    <option value="oz">Onzas</option>
+                    <option value="gr">Gramos</option>
+                    <option value="botellas">Botellas</option>
+                    <option value="raciones">Raciones</option>
+                  </select>
+                  <ChevronDown
+                    size={14}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500"
+                  />
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="ml-1 mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                Imagen URL (Opcional)
-              </label>
-              <input
-                value={img}
-                onChange={(event) => setImg(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition-all placeholder:text-zinc-700 focus:border-[#E5C07B]"
-                placeholder="https://..."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-xl border border-white/10 py-3 text-xs font-bold uppercase tracking-widest text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#E5C07B] py-3 text-xs font-black uppercase tracking-widest text-black transition-colors hover:bg-[#c4a162]"
-              >
-                <Plus size={14} />
-                Registrar
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#E5C07B] py-4 text-xs font-bold uppercase tracking-widest text-black shadow-[0_0_20px_rgba(229,192,123,0.2)] transition-colors hover:bg-[#c4a162]"
+            >
+              <Plus size={16} />
+              Registrar Ingreso
+            </button>
           </form>
-
-          <div className="pointer-events-none absolute right-8 top-8 text-zinc-700">
-            <BoxSelect size={70} />
-          </div>
-          <div className="pointer-events-none absolute right-6 top-6 text-zinc-800">
-            <Package size={90} />
-          </div>
-          <div className="pointer-events-none absolute right-7 top-7 text-zinc-700">
-            <ChefHat size={70} />
-          </div>
         </div>
       </div>
     </ModalBackdrop>

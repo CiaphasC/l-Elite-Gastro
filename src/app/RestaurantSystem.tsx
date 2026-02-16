@@ -23,7 +23,7 @@ import ReservationModal from "@/features/modals/ReservationModal";
 import TableConfirmationModal from "@/features/modals/TableConfirmationModal";
 import AddInventoryModal from "@/features/modals/AddInventoryModal";
 import ClientModal from "@/features/modals/ClientModal";
-import ClientDetailModal from "@/features/modals/ClientDetailModal";
+import ClientDetailView from "@/features/clients/ClientDetailView";
 import OrderTakingInterface from "@/features/orders/OrderTakingInterface";
 
 interface RestaurantSystemProps {
@@ -160,6 +160,25 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
   }`;
   const clientModalKey = `client-${clientModal.isOpen ? "open" : "closed"}-${clientModal.mode}-${clientModal.targetClientId ?? "new"}-${clientModal.targetSegment}`;
 
+  if (selectedClient) {
+    return (
+      <div className="relative flex h-dvh min-h-dvh select-none overflow-hidden bg-[#050505] text-zinc-300">
+        <div className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full overflow-hidden">
+          <div className="absolute left-[-10%] top-[-10%] h-[40%] w-[40%] rounded-full bg-[#E5C07B]/5 blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] h-[40%] w-[40%] rounded-full bg-[#E5C07B]/5 blur-[120px]" />
+        </div>
+
+        <main className="relative z-10 h-full flex-1">
+          <ClientDetailView
+            client={selectedClient}
+            currencyCode={currencyCode}
+            onBack={actions.closeClientDetail}
+          />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={rootRef}
@@ -262,12 +281,6 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
         initialClient={editingClient}
         onClose={actions.closeClientModal}
         onSubmit={actions.saveClient}
-      />
-
-      <ClientDetailModal
-        client={selectedClient}
-        currencyCode={currencyCode}
-        onClose={actions.closeClientDetail}
       />
 
       <AddInventoryModal
