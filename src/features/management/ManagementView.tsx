@@ -6,12 +6,13 @@ import { rectSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 import {
   Plus,
   Search,
+  Trash2,
 } from "lucide-react";
 import TableCreateModal from "@/features/management/components/TableCreateModal";
 import WorkerFormModal from "@/features/management/components/WorkerFormModal";
 import WorkerAccountsTable from "@/features/management/components/WorkerAccountsTable";
 import SortableTableCard from "@/features/management/components/SortableTableCard";
-import TableDeleteConfirmModal from "@/features/management/components/TableDeleteConfirmModal";
+import ActionConfirmModal from "@/shared/components/ActionConfirmModal";
 import {
   useFilteredWorkers,
   type WorkerListMode,
@@ -371,12 +372,18 @@ const ManagementView = ({
         }}
       />
 
-      <TableDeleteConfirmModal
-        table={tablePendingDeletion}
-        isOpen={Boolean(tablePendingDeletion)}
-        onClose={handleCloseDeleteTableModal}
-        onConfirm={handleConfirmTableDeletion}
-      />
+      {tablePendingDeletion && (
+        <ActionConfirmModal
+          isOpen
+          title="Eliminar Mesa"
+          subtitle={`¿Confirma que desea eliminar el registro de la mesa ${tablePendingDeletion.code}? Esta acción retirará la mesa del plano de servicio.`}
+          actionLabel="Iniciar Eliminación de Mesa"
+          icon={<Trash2 size={20} />}
+          onClose={handleCloseDeleteTableModal}
+          onConfirm={handleConfirmTableDeletion}
+          backdropClassName="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+        />
+      )}
     </div>
   );
 };
