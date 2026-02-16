@@ -2,6 +2,7 @@ import { BarChart3, Calendar, CreditCard, PieChart, Star, TrendingUp, Users } fr
 import { formatCurrency } from "@/shared/formatters/currency";
 import type { DashboardSnapshot, MenuItem, SupportedCurrencyCode } from "@/types";
 import StatsCard from "@/shared/components/StatsCard";
+import { useDashboardChartData } from "@/features/dashboard/hooks/useDashboardChartData";
 
 interface DashboardViewProps {
   snapshot: DashboardSnapshot;
@@ -11,101 +12,7 @@ interface DashboardViewProps {
 }
 
 const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab }: DashboardViewProps) => {
-  const chartWidth = 760;
-  const chartHeight = 300;
-  const chartPaddingX = 28;
-  const chartPaddingTop = 20;
-  const chartPaddingBottom = 48;
-  const chartUsableHeight = chartHeight - chartPaddingTop - chartPaddingBottom;
-  const chartUsableWidth = chartWidth - chartPaddingX * 2;
-  const weeklyAmounts = snapshot.weeklyPerformance.map((point) => point.amount);
-  const maxWeeklyAmount = Math.max(...weeklyAmounts, 1);
-  const minWeeklyAmount = Math.min(...weeklyAmounts, 0);
-  const amountRange = Math.max(maxWeeklyAmount - minWeeklyAmount, maxWeeklyAmount * 0.35, 1);
-  const pointsCount = Math.max(snapshot.weeklyPerformance.length - 1, 1);
-
-  const chartPoints = snapshot.weeklyPerformance.map((point, index) => {
-    const x = chartPaddingX + (chartUsableWidth / pointsCount) * index;
-    const relativeValue = (point.amount - minWeeklyAmount) / amountRange;
-    const y = chartPaddingTop + chartUsableHeight - relativeValue * chartUsableHeight;
-
-    return { ...point, x, y };
-  });
-
-  const linePath = chartPoints
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
-
-  const areaPath =
-    chartPoints.length > 0
-      ? `${linePath} L ${chartPoints[chartPoints.length - 1].x} ${chartPaddingTop + chartUsableHeight} L ${chartPoints[0].x} ${chartPaddingTop + chartUsableHeight} Z`
-      : "";
-
-  const horizontalGuides = Array.from({ length: 4 }, (_, index) => {
-    const y = chartPaddingTop + (chartUsableHeight / 3) * index;
-    return { key: `guide-${index}`, y };
-  });
-
-  const barChartWidth = 520;
-  const barChartHeight = 240;
-  const barPaddingX = 26;
-  const barPaddingTop = 18;
-  const barPaddingBottom = 44;
-  const barUsableHeight = barChartHeight - barPaddingTop - barPaddingBottom;
-  const barUsableWidth = barChartWidth - barPaddingX * 2;
-  const barCount = Math.max(snapshot.weeklyPerformance.length, 1);
-  const barSlot = barUsableWidth / barCount;
-  const barWidth = Math.max(Math.min(barSlot * 0.56, 42), 18);
-  const maxBarAmount = Math.max(...weeklyAmounts, 1);
-  const barGuides = Array.from({ length: 4 }, (_, index) => {
-    const y = barPaddingTop + (barUsableHeight / 3) * index;
-    return { key: `bar-guide-${index}`, y };
-  });
-  const bars = snapshot.weeklyPerformance.map((point, index) => {
-    const cleanAmount = Math.max(point.amount, 0);
-    const barHeight = (cleanAmount / maxBarAmount) * barUsableHeight;
-    const xCenter = barPaddingX + barSlot * index + barSlot / 2;
-    return {
-      ...point,
-      x: xCenter - barWidth / 2,
-      y: barPaddingTop + barUsableHeight - barHeight,
-      barHeight,
-    };
-  });
-
-  const peakDay =
-    snapshot.weeklyPerformance.reduce(
-      (best, point) => (point.amount > best.amount ? point : best),
-      snapshot.weeklyPerformance[0] ?? { label: "-", amount: 0 }
-    ) ?? { label: "-", amount: 0 };
-
-  const daySales = Math.max(snapshot.salesByPeriod.day, 0);
-  const weekRemainder = Math.max(snapshot.salesByPeriod.week - snapshot.salesByPeriod.day, 0);
-  const monthRemainder = Math.max(snapshot.salesByPeriod.month - snapshot.salesByPeriod.week, 0);
-  const periodDistribution = [
-    { label: "Hoy", amount: daySales, color: "#22D3EE" },
-    { label: "Resto Semana", amount: weekRemainder, color: "#3B82F6" },
-    { label: "Resto Mes", amount: monthRemainder, color: "#F59E0B" },
-  ];
-  const distributionTotal = periodDistribution.reduce((sum, segment) => sum + segment.amount, 0);
-  const donutRadius = 76;
-  const donutStroke = 14;
-  const donutSize = 220;
-  const donutCenter = donutSize / 2;
-  const donutCircumference = 2 * Math.PI * donutRadius;
-  let currentOffset = 0;
-  const donutSegments = periodDistribution.map((segment) => {
-    const ratio = distributionTotal > 0 ? segment.amount / distributionTotal : 0;
-    const strokeLength = ratio * donutCircumference;
-    const computedSegment = {
-      ...segment,
-      percent: ratio * 100,
-      strokeLength,
-      strokeOffset: currentOffset,
-    };
-    currentOffset += strokeLength;
-    return computedSegment;
-  });
+  const { lineChart, barChart, donutChart, peakDay } = useDashboardChartData(snapshot);
 
   return (
     <div className="grid grid-cols-1 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 md:grid-cols-2 lg:grid-cols-4">
@@ -166,9 +73,9 @@ const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab
         <div className="custom-scroll overflow-x-auto">
           <div className="relative h-[320px] min-w-[680px] px-2 sm:px-4">
             <svg
-              width={chartWidth}
-              height={chartHeight}
-              viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+              width={lineChart.width}
+              height={lineChart.height}
+              viewBox={`0 0 ${lineChart.width} ${lineChart.height}`}
               className="h-full w-full"
               role="img"
               aria-label="Grafico de lineas de rendimiento semanal"
@@ -185,34 +92,36 @@ const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab
                 </linearGradient>
               </defs>
 
-              {horizontalGuides.map((guide) => (
+              {lineChart.horizontalGuides.map((guide) => (
                 <line
                   key={guide.key}
-                  x1={chartPaddingX}
+                  x1={lineChart.paddingX}
                   y1={guide.y}
-                  x2={chartWidth - chartPaddingX}
+                  x2={lineChart.width - lineChart.paddingX}
                   y2={guide.y}
                   stroke="rgba(255,255,255,0.08)"
                   strokeDasharray="4 6"
                 />
               ))}
 
-              {chartPoints.map((point) => (
+              {lineChart.points.map((point) => (
                 <line
                   key={`vertical-${point.label}`}
                   x1={point.x}
-                  y1={chartPaddingTop}
+                  y1={lineChart.paddingTop}
                   x2={point.x}
-                  y2={chartPaddingTop + chartUsableHeight}
+                  y2={lineChart.paddingTop + lineChart.usableHeight}
                   stroke="rgba(148,163,184,0.2)"
                 />
               ))}
 
-              {areaPath ? <path d={areaPath} fill="url(#premiumAreaGradient)" /> : null}
+              {lineChart.areaPath ? (
+                <path d={lineChart.areaPath} fill="url(#premiumAreaGradient)" />
+              ) : null}
 
-              {linePath ? (
+              {lineChart.linePath ? (
                 <path
-                  d={linePath}
+                  d={lineChart.linePath}
                   fill="none"
                   stroke="url(#premiumLineGradient)"
                   strokeWidth={3}
@@ -221,7 +130,7 @@ const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab
                 />
               ) : null}
 
-              {chartPoints.map((point) => (
+              {lineChart.points.map((point) => (
                 <g key={`point-${point.label}`}>
                   <circle cx={point.x} cy={point.y} r={8} fill="rgba(34,211,238,0.22)" />
                   <circle cx={point.x} cy={point.y} r={3.8} fill="#22D3EE">
@@ -229,7 +138,7 @@ const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab
                   </circle>
                   <text
                     x={point.x}
-                    y={chartHeight - 10}
+                    y={lineChart.height - 10}
                     textAnchor="middle"
                     className="fill-zinc-500 text-[10px] font-bold tracking-[0.22em]"
                   >
@@ -284,9 +193,9 @@ const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab
         <div className="custom-scroll overflow-x-auto">
           <div className="relative h-[250px] min-w-[480px]">
             <svg
-              width={barChartWidth}
-              height={barChartHeight}
-              viewBox={`0 0 ${barChartWidth} ${barChartHeight}`}
+              width={barChart.width}
+              height={barChart.height}
+              viewBox={`0 0 ${barChart.width} ${barChart.height}`}
               className="h-full w-full"
               role="img"
               aria-label="Grafico de barras comparativo por dia"
@@ -298,24 +207,24 @@ const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab
                 </linearGradient>
               </defs>
 
-              {barGuides.map((guide) => (
+              {barChart.guides.map((guide) => (
                 <line
                   key={guide.key}
-                  x1={barPaddingX}
+                  x1={barChart.paddingX}
                   y1={guide.y}
-                  x2={barChartWidth - barPaddingX}
+                  x2={barChart.width - barChart.paddingX}
                   y2={guide.y}
                   stroke="rgba(148,163,184,0.25)"
                   strokeDasharray="4 6"
                 />
               ))}
 
-              {bars.map((bar) => (
+              {barChart.bars.map((bar) => (
                 <g key={`bar-${bar.label}`}>
                   <rect
                     x={bar.x}
                     y={bar.y}
-                    width={barWidth}
+                    width={barChart.barWidth}
                     height={bar.barHeight}
                     rx={6}
                     fill="url(#barGradient)"
@@ -323,8 +232,8 @@ const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab
                     <title>{`${bar.label}: ${formatCurrency(bar.amount, currencyCode)}`}</title>
                   </rect>
                   <text
-                    x={bar.x + barWidth / 2}
-                    y={barChartHeight - 10}
+                    x={bar.x + barChart.barWidth / 2}
+                    y={barChart.height - 10}
                     textAnchor="middle"
                     className="fill-zinc-500 text-[10px] font-bold tracking-[0.18em]"
                   >
@@ -358,50 +267,50 @@ const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab
         <div className="grid items-center gap-6 md:grid-cols-[220px_1fr]">
           <div className="mx-auto">
             <svg
-              width={donutSize}
-              height={donutSize}
-              viewBox={`0 0 ${donutSize} ${donutSize}`}
+              width={donutChart.size}
+              height={donutChart.size}
+              viewBox={`0 0 ${donutChart.size} ${donutChart.size}`}
               role="img"
               aria-label="Grafico donut de distribucion de ventas"
             >
               <circle
-                cx={donutCenter}
-                cy={donutCenter}
-                r={donutRadius}
+                cx={donutChart.center}
+                cy={donutChart.center}
+                r={donutChart.radius}
                 stroke="rgba(255,255,255,0.1)"
-                strokeWidth={donutStroke}
+                strokeWidth={donutChart.stroke}
                 fill="none"
               />
 
-              {donutSegments.map((segment) => (
+              {donutChart.segments.map((segment) => (
                 <circle
                   key={segment.label}
-                  cx={donutCenter}
-                  cy={donutCenter}
-                  r={donutRadius}
+                  cx={donutChart.center}
+                  cy={donutChart.center}
+                  r={donutChart.radius}
                   stroke={segment.color}
-                  strokeWidth={donutStroke}
+                  strokeWidth={donutChart.stroke}
                   fill="none"
                   strokeLinecap="round"
-                  strokeDasharray={`${segment.strokeLength} ${donutCircumference - segment.strokeLength}`}
+                  strokeDasharray={`${segment.strokeLength} ${donutChart.circumference - segment.strokeLength}`}
                   strokeDashoffset={-segment.strokeOffset}
-                  transform={`rotate(-90 ${donutCenter} ${donutCenter})`}
+                  transform={`rotate(-90 ${donutChart.center} ${donutChart.center})`}
                 >
                   <title>{`${segment.label}: ${formatCurrency(segment.amount, currencyCode)} (${segment.percent.toFixed(1)}%)`}</title>
                 </circle>
               ))}
 
               <text
-                x={donutCenter}
-                y={donutCenter - 10}
+                x={donutChart.center}
+                y={donutChart.center - 10}
                 textAnchor="middle"
                 className="fill-zinc-500 text-[10px] font-bold uppercase tracking-[0.18em]"
               >
                 Mes
               </text>
               <text
-                x={donutCenter}
-                y={donutCenter + 16}
+                x={donutChart.center}
+                y={donutChart.center + 16}
                 textAnchor="middle"
                 className="fill-white text-[18px] font-mono font-bold"
               >
@@ -411,7 +320,7 @@ const DashboardView = ({ snapshot, currencyCode, stockAlerts, onOpenInventoryTab
           </div>
 
           <div className="space-y-3">
-            {donutSegments.map((segment) => (
+            {donutChart.segments.map((segment) => (
               <div
                 key={`legend-${segment.label}`}
                 className="rounded-xl border border-white/10 bg-white/5 px-4 py-3"

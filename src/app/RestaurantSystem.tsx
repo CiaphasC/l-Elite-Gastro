@@ -1,6 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { gsap } from "gsap";
-import { useRestaurantStore } from "@/app/useRestaurantStore";
+import {
+  deriveSelectedClient,
+  deriveSelectedKitchenOrder,
+  deriveUnreadNotificationsCount,
+} from "@/domain/selectors";
+import {
+  useRestaurantActions,
+  useRestaurantShallowSelector,
+} from "@/store/hooks";
+import { useCartTotals } from "@/shared/hooks/useCartTotals";
 import CartPanel from "@/features/cart/CartPanel";
 import MobileCartDrawer from "@/features/cart/MobileCartDrawer";
 import { featureRegistry } from "@/features/registry";
@@ -25,11 +34,53 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mainContentRef = useRef<HTMLElement | null>(null);
   const isLogoutTransitionRunningRef = useRef(false);
-  const { state, actions, derived } = useRestaurantStore();
 
-  useEffect(() => {
-    actions.finishBoot();
-  }, [actions]);
+  const actions = useRestaurantActions();
+  const {
+    activeTab,
+    currencyCode,
+    searchTerm,
+    notifications,
+    cart,
+    serviceContext,
+    tables,
+    kitchenOrders,
+    inventory,
+    clients,
+    inventoryMainTab,
+    kitchenInventoryTab,
+    orderTakingContext,
+    ui,
+  } = useRestaurantShallowSelector((state) => ({
+    activeTab: state.activeTab,
+    currencyCode: state.currencyCode,
+    searchTerm: state.searchTerm,
+    notifications: state.notifications,
+    cart: state.cart,
+    serviceContext: state.serviceContext,
+    tables: state.tables,
+    kitchenOrders: state.kitchenOrders,
+    inventory: state.inventory,
+    clients: state.clients,
+    inventoryMainTab: state.inventoryMainTab,
+    kitchenInventoryTab: state.kitchenInventoryTab,
+    orderTakingContext: state.orderTakingContext,
+    ui: state.ui,
+  }));
+
+  const {
+    showCheckout,
+    showReservationModal,
+    reservationEditingId,
+    reservationPrefill,
+    kitchenModalType,
+    selectedOrderId,
+    showNotificationPanel,
+    showInventoryCreateModal,
+    confirmationModal,
+    clientModal,
+    selectedClientId,
+  } = ui;
 
   useEffect(() => {
     if (!rootRef.current || !mainContentRef.current) {
@@ -84,19 +135,30 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
     });
   };
 
-  const selectedKitchenOrder = derived.selectedKitchenOrder;
-  const selectedClient = derived.selectedClient;
-  const activeFeature = featureRegistry[state.activeTab];
+  const unreadNotificationsCount = useMemo(
+    () => deriveUnreadNotificationsCount(notifications),
+    [notifications]
+  );
+  const cartTotals = useCartTotals(cart);
+  const selectedKitchenOrder = useMemo(
+    () => deriveSelectedKitchenOrder(kitchenOrders, selectedOrderId),
+    [kitchenOrders, selectedOrderId]
+  );
+  const selectedClient = useMemo(
+    () => deriveSelectedClient(clients, selectedClientId),
+    [clients, selectedClientId]
+  );
+  const activeFeature = featureRegistry[activeTab];
   const editingClient =
-    typeof state.ui.clientModal.targetClientId === "number"
-      ? state.clients.find((client) => client.id === state.ui.clientModal.targetClientId) ?? null
+    typeof clientModal.targetClientId === "number"
+      ? clients.find((client) => client.id === clientModal.targetClientId) ?? null
       : null;
   const reservationModalKey = `reservation-${
-    state.ui.showReservationModal
-      ? `${state.ui.reservationEditingId ?? "new"}-${JSON.stringify(state.ui.reservationPrefill ?? {})}`
+    showReservationModal
+      ? `${reservationEditingId ?? "new"}-${JSON.stringify(reservationPrefill ?? {})}`
       : "closed"
   }`;
-  const clientModalKey = `client-${state.ui.clientModal.isOpen ? "open" : "closed"}-${state.ui.clientModal.mode}-${state.ui.clientModal.targetClientId ?? "new"}-${state.ui.clientModal.targetSegment}`;
+  const clientModalKey = `client-${clientModal.isOpen ? "open" : "closed"}-${clientModal.mode}-${clientModal.targetClientId ?? "new"}-${clientModal.targetSegment}`;
 
   return (
     <div
@@ -108,7 +170,7 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
         <div className="absolute bottom-[-10%] right-[-10%] h-[40%] w-[40%] rounded-full bg-[#E5C07B]/5 blur-[120px]" />
       </div>
 
-      <Sidebar activeTab={state.activeTab} onTabChange={actions.setActiveTab} onLogout={handleLogout} />
+      <Sidebar activeTab={activeTab} onTabChange={actions.setActiveTab} onLogout={handleLogout} />
 
       <main
         ref={mainContentRef}
@@ -117,28 +179,28 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
         <Header
           title={activeFeature.title}
           showSearch={activeFeature.searchEnabled}
-          notifications={state.notifications}
-          unreadNotificationsCount={derived.unreadNotificationsCount}
-          isNotificationPanelOpen={state.ui.showNotificationPanel}
-          searchTerm={state.searchTerm}
+          notifications={notifications}
+          unreadNotificationsCount={unreadNotificationsCount}
+          isNotificationPanelOpen={showNotificationPanel}
+          searchTerm={searchTerm}
           onSearchTermChange={actions.setSearchTerm}
           onToggleNotifications={actions.toggleNotificationPanel}
           onCloseNotifications={actions.closeNotificationPanel}
           onClearNotifications={actions.clearNotifications}
           onReadNotification={actions.markNotificationAsRead}
         />
-        <MobileTabNav activeTab={state.activeTab} onTabChange={actions.setActiveTab} />
-        {activeFeature.render({ state, actions, derived })}
+        <MobileTabNav activeTab={activeTab} onTabChange={actions.setActiveTab} />
+        {activeFeature.render()}
       </main>
 
       <CartPanel
-        cartItems={state.cart}
-        currencyCode={state.currencyCode}
-        subtotal={derived.cartSubtotal}
-        serviceFee={derived.cartServiceFee}
-        total={derived.cartTotal}
-        serviceContext={state.serviceContext}
-        tables={state.tables}
+        cartItems={cart}
+        currencyCode={currencyCode}
+        subtotal={cartTotals.subtotal}
+        serviceFee={cartTotals.serviceFee}
+        total={cartTotals.total}
+        serviceContext={serviceContext}
+        tables={tables}
         onClearCart={actions.clearCart}
         onUpdateQty={actions.updateCartQty}
         onOpenCheckout={actions.openCheckout}
@@ -146,35 +208,34 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
       />
 
       <MobileCartDrawer
-        cartItems={state.cart}
-        currencyCode={state.currencyCode}
-        itemCount={derived.cartItemsCount}
-        subtotal={derived.cartSubtotal}
-        serviceFee={derived.cartServiceFee}
-        total={derived.cartTotal}
+        cartItems={cart}
+        currencyCode={currencyCode}
+        itemCount={cartTotals.itemCount}
+        subtotal={cartTotals.subtotal}
+        serviceFee={cartTotals.serviceFee}
+        total={cartTotals.total}
         onClearCart={actions.clearCart}
         onUpdateQty={actions.updateCartQty}
         onOpenCheckout={actions.openCheckout}
       />
 
       <CheckoutModal
-        isOpen={state.ui.showCheckout}
-        currencyCode={state.currencyCode}
-        total={derived.cartTotal}
+        isOpen={showCheckout}
+        currencyCode={currencyCode}
+        total={cartTotals.total}
         onClose={actions.closeCheckout}
         onConfirm={actions.confirmCheckout}
       />
 
       <KitchenServeModal
-        order={state.ui.kitchenModalType === "kitchen-serve" ? selectedKitchenOrder : null}
+        order={kitchenModalType === "kitchen-serve" ? selectedKitchenOrder : null}
         onClose={actions.closeKitchenModal}
         onConfirm={() => actions.completeKitchenOrder(selectedKitchenOrder?.id)}
       />
 
       <KitchenDetailModal
-        order={state.ui.kitchenModalType === "kitchen-detail" ? selectedKitchenOrder : null}
-        inventory={state.inventory}
-        currencyCode={state.currencyCode}
+        order={kitchenModalType === "kitchen-detail" ? selectedKitchenOrder : null}
+        currencyCode={currencyCode}
         onClose={actions.closeKitchenModal}
         onMarkToServe={() => {
           if (selectedKitchenOrder) {
@@ -185,19 +246,19 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
 
       <ReservationModal
         key={reservationModalKey}
-        isOpen={state.ui.showReservationModal}
-        tables={state.tables}
-        prefill={state.ui.reservationPrefill}
-        mode={state.ui.reservationEditingId ? "edit" : "create"}
+        isOpen={showReservationModal}
+        tables={tables}
+        prefill={reservationPrefill}
+        mode={reservationEditingId ? "edit" : "create"}
         onClose={actions.closeReservationModal}
         onSubmitReservation={actions.addReservation}
       />
 
       <ClientModal
         key={clientModalKey}
-        isOpen={state.ui.clientModal.isOpen}
-        mode={state.ui.clientModal.mode}
-        segment={state.ui.clientModal.targetSegment}
+        isOpen={clientModal.isOpen}
+        mode={clientModal.mode}
+        segment={clientModal.targetSegment}
         initialClient={editingClient}
         onClose={actions.closeClientModal}
         onSubmit={actions.saveClient}
@@ -205,30 +266,30 @@ const RestaurantSystem = ({ onLogout }: RestaurantSystemProps) => {
 
       <ClientDetailModal
         client={selectedClient}
-        currencyCode={state.currencyCode}
+        currencyCode={currencyCode}
         onClose={actions.closeClientDetail}
       />
 
       <AddInventoryModal
-        isOpen={state.ui.showInventoryCreateModal}
-        inventoryMainTab={state.inventoryMainTab}
-        kitchenInventoryTab={state.kitchenInventoryTab}
+        isOpen={showInventoryCreateModal}
+        inventoryMainTab={inventoryMainTab}
+        kitchenInventoryTab={kitchenInventoryTab}
         onClose={actions.closeInventoryCreateModal}
         onSubmit={actions.addInventoryItem}
       />
 
       <TableConfirmationModal
-        modalState={state.ui.confirmationModal}
+        modalState={confirmationModal}
         onClose={actions.closeTableConfirmation}
         onConfirm={actions.confirmTableAction}
       />
 
-      {state.orderTakingContext && (
+      {orderTakingContext && (
         <OrderTakingInterface
-          context={state.orderTakingContext}
-          inventory={state.inventory}
-          kitchenOrders={state.kitchenOrders}
-          currencyCode={state.currencyCode}
+          context={orderTakingContext}
+          inventory={inventory}
+          kitchenOrders={kitchenOrders}
+          currencyCode={currencyCode}
           onCancel={actions.cancelOrderTaking}
           onConfirmOrder={actions.confirmOrderTaking}
         />

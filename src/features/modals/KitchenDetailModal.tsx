@@ -1,49 +1,21 @@
 import { ArrowLeft, CheckCircle2, Receipt } from "lucide-react";
-import { resolveKitchenOrderSequence, resolveKitchenOrderTableId } from "@/domain/orders";
+import {
+  resolveKitchenOrderLabels,
+  resolveKitchenOrderLineDisplay,
+  type KitchenOrderLineDisplay,
+} from "@/domain/orders";
 import { formatCurrency } from "@/shared/formatters/currency";
-import type { KitchenOrder, KitchenOrderItem, MenuItem, SupportedCurrencyCode } from "@/types";
+import type { KitchenOrder, SupportedCurrencyCode } from "@/types";
 
 interface KitchenDetailModalProps {
   order: KitchenOrder | null;
-  inventory: MenuItem[];
   currencyCode: SupportedCurrencyCode;
   onClose: () => void;
   onMarkToServe: () => void;
 }
 
-interface DetailLine {
-  key: string;
-  name: string;
-  qty: number;
-  price: number;
-  img: string;
-  lineTotal: number;
-}
-
-const fallbackItemImage =
-  "https://images.unsplash.com/photo-1546241072-48010ad28c2c?auto=format&fit=crop&q=80&w=800";
-
-const resolveDetailLine = (line: KitchenOrderItem, inventory: MenuItem[]): DetailLine => {
-  const inventoryMatch =
-    (typeof line.itemId === "number"
-      ? inventory.find((item) => item.id === line.itemId)
-      : undefined) ?? inventory.find((item) => item.name === line.name);
-  const itemPrice = line.price ?? inventoryMatch?.price ?? 0;
-  const itemImg = line.img ?? inventoryMatch?.img ?? fallbackItemImage;
-
-  return {
-    key: `${line.itemId ?? line.name}-${line.qty}`,
-    name: line.name,
-    qty: line.qty,
-    price: itemPrice,
-    img: itemImg,
-    lineTotal: itemPrice * line.qty,
-  };
-};
-
 const KitchenDetailModal = ({
   order,
-  inventory,
   currencyCode,
   onClose,
   onMarkToServe,
@@ -52,13 +24,11 @@ const KitchenDetailModal = ({
     return null;
   }
 
-  const tableId = resolveKitchenOrderTableId(order);
-  const sequence = resolveKitchenOrderSequence(order);
-  const tableLabel = tableId ? `Mesa ${tableId}` : order.id;
-  const orderLabel =
-    typeof sequence === "number" ? `Orden #${String(sequence).padStart(2, "0")}` : "Orden";
+  const { tableLabel, orderLabel } = resolveKitchenOrderLabels(order);
 
-  const detailLines = order.items.map((line) => resolveDetailLine(line, inventory));
+  const detailLines: KitchenOrderLineDisplay[] = order.items.map((line) =>
+    resolveKitchenOrderLineDisplay(line)
+  );
   const subtotal = detailLines.reduce((acc, line) => acc + line.lineTotal, 0);
 
   return (

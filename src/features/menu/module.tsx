@@ -1,5 +1,5 @@
 import { UtensilsCrossed } from "lucide-react";
-import MenuView from "@/features/menu/MenuView";
+import MenuFeatureContent from "@/features/menu/MenuFeatureContent";
 import type { FeatureModule } from "@/features/types";
 
 export const menuFeatureModule: FeatureModule = {
@@ -9,14 +9,5 @@ export const menuFeatureModule: FeatureModule = {
   shortLabel: "Menu",
   searchEnabled: true,
   Icon: UtensilsCrossed,
-  render: ({ state, actions, derived }) => (
-    <MenuView
-      categories={derived.menuCategories}
-      selectedCategory={state.selectedCategory}
-      currencyCode={state.currencyCode}
-      onSelectCategory={actions.setSelectedCategory}
-      items={derived.filteredMenuItems}
-      onAddToCart={actions.addToCart}
-    />
-  ),
+  render: () => <MenuFeatureContent />,
 };

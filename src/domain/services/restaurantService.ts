@@ -46,9 +46,6 @@ const resolveStatusOnTableAssignment = (
   return "confirmado";
 };
 
-export const isVipReservationStatus = (status: Reservation["status"]): boolean =>
-  status === "vip" || status === "vip pendiente" || status === "vip reservado";
-
 const createReservationId = (): string => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -167,7 +164,7 @@ export const appendReservation = (
   return [...reservations, reservation];
 };
 
-export interface ReservationTableMutationResult {
+interface ReservationTableMutationResult {
   reservations: Reservation[];
   tables: TableInfo[];
 }

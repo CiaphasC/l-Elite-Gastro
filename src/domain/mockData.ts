@@ -295,31 +295,66 @@ export const CLIENTS: Client[] = [
 
 export const INITIAL_KITCHEN_ORDERS: KitchenOrder[] = [
   {
-    id: "T-102",
+    id: "T-102-01",
+    tableId: 102,
+    sequence: 1,
     items: [
-      { name: "Carpaccio de Wagyu A5", qty: 1 },
-      { name: "Lubina Salvaje", qty: 2 },
+      {
+        itemId: 1,
+        name: "Carpaccio de Wagyu A5",
+        qty: 1,
+        price: 45,
+        img: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&q=80&w=800",
+      },
+      {
+        itemId: 4,
+        name: "Lubina Salvaje",
+        qty: 2,
+        price: 48,
+        img: "https://images.pexels.com/photos/6046747/pexels-photo-6046747.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      },
     ],
-    time: "12 min",
     status: "cooking",
     waiter: "Pedro G.",
     notes: "Sin sal en la lubina",
   },
   {
-    id: "T-105",
+    id: "T-105-01",
+    tableId: 105,
+    sequence: 1,
     items: [
-      { name: "Ostras Fine de Claire", qty: 1 },
-      { name: "Solomillo Rossini", qty: 1 },
+      {
+        itemId: 2,
+        name: "Ostras Fine de Claire",
+        qty: 1,
+        price: 38,
+        img: "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&q=80&w=800",
+      },
+      {
+        itemId: 3,
+        name: "Solomillo Rossini",
+        qty: 1,
+        price: 56,
+        img: "https://images.pexels.com/photos/8753745/pexels-photo-8753745.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      },
     ],
-    time: "5 min",
     status: "pending",
     waiter: "Maria C.",
     notes: "Solomillo muy hecho",
   },
   {
-    id: "T-108",
-    items: [{ name: "Souffle Grand Marnier", qty: 4 }],
-    time: "2 min",
+    id: "T-108-01",
+    tableId: 108,
+    sequence: 1,
+    items: [
+      {
+        itemId: 7,
+        name: "Souffle Grand Marnier",
+        qty: 4,
+        price: 18,
+        img: "https://images.pexels.com/photos/32149261/pexels-photo-32149261.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      },
+    ],
     status: "ready",
     waiter: "Pedro G.",
     notes: "Servir todos a la vez",
@@ -341,8 +376,7 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 ];
 
 export const INITIAL_SERVICE_CONTEXT: ServiceContext = {
-  tableLabel: "Mesa 102",
-  serviceTier: "VIP",
+  tableId: 102,
 };
 
 const dateFromToday = (daysOffset: number, hour: number, minute = 0): Date => {

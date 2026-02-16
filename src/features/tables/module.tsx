@@ -1,5 +1,5 @@
 import { Grid2X2 } from "lucide-react";
-import TablesView from "@/features/tables/TablesView";
+import TablesFeatureContent from "@/features/tables/TablesFeatureContent";
 import type { FeatureModule } from "@/features/types";
 
 export const tablesFeatureModule: FeatureModule = {
@@ -9,12 +9,5 @@ export const tablesFeatureModule: FeatureModule = {
   shortLabel: "Salon",
   searchEnabled: false,
   Icon: Grid2X2,
-  render: ({ state, actions }) => (
-    <TablesView
-      tables={state.tables}
-      reservations={state.reservations}
-      onRequestTableAction={actions.openTableConfirmation}
-      onOpenReservationFromTable={(tableId) => actions.openReservationModal({ table: tableId })}
-    />
-  ),
+  render: () => <TablesFeatureContent />,
 };

@@ -1,5 +1,5 @@
 import { Package } from "lucide-react";
-import InventoryView from "@/features/inventory/InventoryView";
+import InventoryFeatureContent from "@/features/inventory/InventoryFeatureContent";
 import type { FeatureModule } from "@/features/types";
 
 export const inventoryFeatureModule: FeatureModule = {
@@ -9,15 +9,5 @@ export const inventoryFeatureModule: FeatureModule = {
   shortLabel: "Bodega",
   searchEnabled: true,
   Icon: Package,
-  render: ({ state, actions, derived }) => (
-    <InventoryView
-      items={derived.filteredInventoryItems}
-      inventoryMainTab={state.inventoryMainTab}
-      kitchenInventoryTab={state.kitchenInventoryTab}
-      onSetInventoryMainTab={actions.setInventoryMainTab}
-      onSetKitchenInventoryTab={actions.setKitchenInventoryTab}
-      onOpenCreateModal={actions.openInventoryCreateModal}
-      onAdjustStock={actions.adjustStock}
-    />
-  ),
+  render: () => <InventoryFeatureContent />,
 };

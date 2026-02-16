@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { CheckCircle2, Trash2, Wine } from "lucide-react";
 import type { CartItem, ServiceContext, SupportedCurrencyCode, TableInfo } from "@/types";
 import CartItemLine from "@/features/cart/components/CartItemLine";
@@ -19,16 +18,6 @@ interface CartPanelProps {
   onSelectTable: (tableId: number) => void;
 }
 
-const extractTableId = (tableLabel: string): number | "" => {
-  const match = tableLabel.match(/\d+/);
-  if (!match) {
-    return "";
-  }
-
-  const parsed = Number(match[0]);
-  return Number.isNaN(parsed) ? "" : parsed;
-};
-
 const CartPanel = ({
   cartItems,
   currencyCode,
@@ -42,14 +31,7 @@ const CartPanel = ({
   onOpenCheckout,
   onSelectTable,
 }: CartPanelProps) => {
-  const [selectedTableId, setSelectedTableId] = useState<number | "">(() =>
-    extractTableId(serviceContext.tableLabel)
-  );
-
-  useEffect(() => {
-    setSelectedTableId(extractTableId(serviceContext.tableLabel));
-  }, [serviceContext.tableLabel]);
-
+  const selectedTableId = serviceContext.tableId;
   const selectableTableIds = tables.map((table) => table.id);
 
   return (
@@ -70,7 +52,6 @@ const CartPanel = ({
                   if (nextValue === "") {
                     return;
                   }
-                  setSelectedTableId(nextValue);
                   onSelectTable(nextValue);
                 }}
               />

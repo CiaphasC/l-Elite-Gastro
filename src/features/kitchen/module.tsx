@@ -1,5 +1,5 @@
 import { ChefHat } from "lucide-react";
-import KitchenView from "@/features/kitchen/KitchenView";
+import KitchenFeatureContent from "@/features/kitchen/KitchenFeatureContent";
 import type { FeatureModule } from "@/features/types";
 
 export const kitchenFeatureModule: FeatureModule = {
@@ -9,7 +9,5 @@ export const kitchenFeatureModule: FeatureModule = {
   shortLabel: "Cocina",
   searchEnabled: false,
   Icon: ChefHat,
-  render: ({ state, actions }) => (
-    <KitchenView orders={state.kitchenOrders} onOpenKitchenModal={actions.openKitchenModal} />
-  ),
+  render: () => <KitchenFeatureContent />,
 };

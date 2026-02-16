@@ -1,26 +1,56 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  fetchRestaurantBootstrap,
+  RESTAURANT_BOOTSTRAP_QUERY_KEY,
+} from "@/domain/services/bootstrapService";
 import RestaurantSystem from "@/app/RestaurantSystem";
 import LandingPage from "@/features/landing/LandingPage";
 import LoadingScreen from "@/shared/components/LoadingScreen";
+import { useRestaurantActions } from "@/store/hooks";
 
 type AppView = "landing" | "system";
-const INITIAL_BOOT_DELAY_MS = 900;
 
 const App = () => {
-  const [isBooting, setIsBooting] = useState(true);
+  const { hydrateState } = useRestaurantActions();
   const [view, setView] = useState<AppView>("landing");
+  const bootstrapQuery = useQuery({
+    queryKey: RESTAURANT_BOOTSTRAP_QUERY_KEY,
+    queryFn: fetchRestaurantBootstrap,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
 
-  // We keep a lightweight boot loader before showing the landing to avoid startup flashes.
   useEffect(() => {
-    const bootTimer = window.setTimeout(() => {
-      setIsBooting(false);
-    }, INITIAL_BOOT_DELAY_MS);
+    if (!bootstrapQuery.data) {
+      return;
+    }
 
-    return () => window.clearTimeout(bootTimer);
-  }, []);
+    hydrateState(bootstrapQuery.data);
+  }, [bootstrapQuery.data, hydrateState]);
 
-  if (isBooting) {
+  if (bootstrapQuery.isPending) {
     return <LoadingScreen />;
+  }
+
+  if (bootstrapQuery.isError) {
+    return (
+      <div className="flex h-dvh w-full items-center justify-center bg-[#050505] p-6 text-zinc-300">
+        <div className="glass-panel w-full max-w-md rounded-3xl border border-red-500/20 p-8 text-center">
+          <h1 className="mb-3 font-serif text-3xl text-white">No se pudo iniciar el sistema</h1>
+          <p className="mb-8 text-sm text-zinc-400">
+            Ocurrio un error cargando los datos iniciales. Intenta nuevamente.
+          </p>
+          <button
+            type="button"
+            onClick={() => bootstrapQuery.refetch()}
+            className="rounded-xl bg-[#E5C07B] px-6 py-3 text-xs font-black uppercase tracking-[0.2em] text-black transition-colors hover:bg-[#c4a162]"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,11 +1,13 @@
 import { MENU_CATEGORY_PRIORITY } from "@/domain/constants";
 import type {
-  CartItem,
   Client,
+  ClientFilter,
+  InventoryMainTab,
+  KitchenInventoryTab,
   KitchenOrder,
   MenuCategory,
   MenuItem,
-  RestaurantState,
+  NotificationItem,
 } from "@/types";
 
 const BAR_CATEGORIES = new Set<MenuCategory>([
@@ -23,8 +25,8 @@ const includesText = (source: string, term: string): boolean =>
 
 const isBarInventoryCategory = (category: MenuCategory): boolean => BAR_CATEGORIES.has(category);
 
-export const selectMenuCategories = (state: RestaurantState): MenuCategory[] => {
-  const categories = [...new Set(state.inventory.filter((item) => item.type === "dish").map((item) => item.category))];
+export const deriveMenuCategoriesFromInventory = (inventory: MenuItem[]): MenuCategory[] => {
+  const categories = [...new Set(inventory.filter((item) => item.type === "dish").map((item) => item.category))];
 
   return categories.sort((categoryA, categoryB) => {
     const indexA = MENU_CATEGORY_PRIORITY.indexOf(categoryA);
@@ -46,22 +48,31 @@ export const selectMenuCategories = (state: RestaurantState): MenuCategory[] => 
   });
 };
 
-export const selectFilteredMenuItems = (state: RestaurantState): MenuItem[] => {
-  const term = normalizeText(state.searchTerm);
+export const filterMenuItems = (
+  inventory: MenuItem[],
+  selectedCategory: MenuCategory,
+  searchTerm: string
+): MenuItem[] => {
+  const term = normalizeText(searchTerm);
 
-  return state.inventory.filter(
+  return inventory.filter(
     (item) =>
       item.type === "dish" &&
-      item.category === state.selectedCategory &&
+      item.category === selectedCategory &&
       includesText(item.name, term)
   );
 };
 
-export const selectFilteredInventoryItems = (state: RestaurantState): MenuItem[] => {
-  const term = normalizeText(state.searchTerm);
+export const filterInventoryItems = (
+  inventory: MenuItem[],
+  inventoryMainTab: InventoryMainTab,
+  kitchenInventoryTab: KitchenInventoryTab,
+  searchTerm: string
+): MenuItem[] => {
+  const term = normalizeText(searchTerm);
 
-  return state.inventory.filter((item) => {
-    const inKitchen = state.inventoryMainTab === "kitchen";
+  return inventory.filter((item) => {
+    const inKitchen = inventoryMainTab === "kitchen";
     const isBarCategory = isBarInventoryCategory(item.category);
 
     if (inKitchen && isBarCategory) {
@@ -73,11 +84,11 @@ export const selectFilteredInventoryItems = (state: RestaurantState): MenuItem[]
     }
 
     if (inKitchen) {
-      if (state.kitchenInventoryTab === "dishes" && item.type !== "dish") {
+      if (kitchenInventoryTab === "dishes" && item.type !== "dish") {
         return false;
       }
 
-      if (state.kitchenInventoryTab === "ingredients" && item.type !== "ingredient") {
+      if (kitchenInventoryTab === "ingredients" && item.type !== "ingredient") {
         return false;
       }
     }
@@ -90,11 +101,15 @@ export const selectFilteredInventoryItems = (state: RestaurantState): MenuItem[]
   });
 };
 
-export const selectFilteredClients = (state: RestaurantState): Client[] => {
-  const term = normalizeText(state.searchTerm);
-  const isVipFilter = state.clientFilter === "vip";
+export const filterClients = (
+  clients: Client[],
+  clientFilter: ClientFilter,
+  searchTerm: string
+): Client[] => {
+  const term = normalizeText(searchTerm);
+  const isVipFilter = clientFilter === "vip";
 
-  return state.clients.filter((client) => {
+  return clients.filter((client) => {
     const passesSegment = isVipFilter ? client.tier === "Gold" : client.tier !== "Gold";
     if (!passesSegment) {
       return false;
@@ -109,29 +124,16 @@ export const selectFilteredClients = (state: RestaurantState): Client[] => {
   });
 };
 
-export const selectFilteredVipClients = (state: RestaurantState): Client[] =>
-  state.clients.filter((client) => client.tier === "Gold");
+export const deriveLowStockItems = (inventory: MenuItem[], threshold = 10): MenuItem[] =>
+  inventory.filter((item) => item.stock < threshold);
 
-export const selectCartSubtotal = (state: RestaurantState): number =>
-  state.cart.reduce((acc: number, item: CartItem) => acc + item.price * item.qty, 0);
+export const deriveSelectedKitchenOrder = (
+  kitchenOrders: KitchenOrder[],
+  selectedOrderId: string | null
+): KitchenOrder | null => kitchenOrders.find((order) => order.id === selectedOrderId) || null;
 
-export const selectCartServiceFee = (state: RestaurantState): number =>
-  selectCartSubtotal(state) * 0.1;
+export const deriveUnreadNotificationsCount = (notifications: NotificationItem[]): number =>
+  notifications.filter((notification) => !notification.read).length;
 
-export const selectCartTotal = (state: RestaurantState): number =>
-  selectCartSubtotal(state) + selectCartServiceFee(state);
-
-export const selectCartItemsCount = (state: RestaurantState): number =>
-  state.cart.reduce((acc: number, item: CartItem) => acc + item.qty, 0);
-
-export const selectLowStockItems = (state: RestaurantState, threshold = 10): MenuItem[] =>
-  state.inventory.filter((item) => item.stock < threshold);
-
-export const selectSelectedKitchenOrder = (state: RestaurantState): KitchenOrder | null =>
-  state.kitchenOrders.find((order) => order.id === state.ui.selectedOrderId) || null;
-
-export const selectUnreadNotificationsCount = (state: RestaurantState): number =>
-  state.notifications.filter((notification) => !notification.read).length;
-
-export const selectSelectedClient = (state: RestaurantState): Client | null =>
-  state.clients.find((client) => client.id === state.ui.selectedClientId) ?? null;
+export const deriveSelectedClient = (clients: Client[], selectedClientId: number | null): Client | null =>
+  clients.find((client) => client.id === selectedClientId) ?? null;

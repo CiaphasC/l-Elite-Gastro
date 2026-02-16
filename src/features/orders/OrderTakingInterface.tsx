@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, ArrowRight, BoxSelect, Minus, Plus, Receipt } from "lucide-react";
-import { resolveKitchenOrderSequence, resolveKitchenOrderTableId } from "@/domain/orders";
+import { DEFAULT_SERVICE_FEE_RATE } from "@/domain/pricing";
+import { useCartTotals } from "@/shared/hooks/useCartTotals";
+import { useMenuFilter } from "@/features/menu/hooks/useMenuFilter";
 import type {
-  CartItem,
   KitchenOrder,
-  KitchenOrderItem,
   MenuCategory,
   MenuItem,
   OrderTakingConfirmationPayload,
@@ -12,6 +12,8 @@ import type {
   SupportedCurrencyCode,
 } from "@/types";
 import { formatCurrency } from "@/shared/formatters/currency";
+import { useHistoricalOrderBatches } from "@/features/orders/hooks/useHistoricalOrderBatches";
+import { useOrderTakingCart } from "@/features/orders/hooks/useOrderTakingCart";
 
 interface OrderTakingInterfaceProps {
   context: OrderTakingContext;
@@ -22,86 +24,6 @@ interface OrderTakingInterfaceProps {
   onConfirmOrder: (payload: OrderTakingConfirmationPayload) => void;
 }
 
-interface HistoricalOrderLine {
-  key: string;
-  name: string;
-  qty: number;
-  price: number;
-  img: string;
-  lineTotal: number;
-}
-
-interface HistoricalOrderBatch {
-  id: string;
-  sequence: number;
-  waiter: string;
-  notes?: string;
-  items: HistoricalOrderLine[];
-  subtotal: number;
-}
-
-const serviceFeeRate = 0.1;
-const fallbackItemImage =
-  "https://images.unsplash.com/photo-1546241072-48010ad28c2c?auto=format&fit=crop&q=80&w=800";
-
-const resolveOrderLineDisplay = (
-  line: KitchenOrderItem,
-  inventory: MenuItem[]
-): HistoricalOrderLine => {
-  const inventoryMatch =
-    (typeof line.itemId === "number"
-      ? inventory.find((item) => item.id === line.itemId)
-      : undefined) ?? inventory.find((item) => item.name === line.name);
-  const itemPrice = line.price ?? inventoryMatch?.price ?? 0;
-  const itemImg = line.img ?? inventoryMatch?.img ?? fallbackItemImage;
-
-  return {
-    key: `${line.itemId ?? line.name}-${line.qty}`,
-    name: line.name,
-    qty: line.qty,
-    price: itemPrice,
-    img: itemImg,
-    lineTotal: itemPrice * line.qty,
-  };
-};
-
-const buildHistoricalBatches = (
-  tableId: number,
-  kitchenOrders: KitchenOrder[],
-  inventory: MenuItem[]
-): HistoricalOrderBatch[] => {
-  const ordersByTable = kitchenOrders
-    .filter((order) => resolveKitchenOrderTableId(order) === tableId)
-    .map((order, index) => ({
-      order,
-      originalIndex: index,
-      sequence: resolveKitchenOrderSequence(order),
-    }))
-    .sort((left, right) => {
-      const leftSequence = left.sequence ?? Number.MAX_SAFE_INTEGER;
-      const rightSequence = right.sequence ?? Number.MAX_SAFE_INTEGER;
-      if (leftSequence === rightSequence) {
-        return left.originalIndex - right.originalIndex;
-      }
-      return leftSequence - rightSequence;
-    });
-
-  return ordersByTable.map(({ order, sequence }, index) => {
-    const resolvedSequence = typeof sequence === "number" && sequence > 0 ? sequence : index + 1;
-    const lines = order.items.map((line) => resolveOrderLineDisplay(line, inventory));
-    const subtotal = lines.reduce((acc, line) => acc + line.lineTotal, 0);
-
-    return {
-      id: order.id,
-      sequence: resolvedSequence,
-      waiter: order.waiter,
-      notes: order.notes,
-      items: lines,
-      subtotal,
-    };
-  });
-};
-
 const OrderTakingInterface = ({
   context,
   inventory,
@@ -110,66 +32,19 @@ const OrderTakingInterface = ({
   onCancel,
   onConfirmOrder,
 }: OrderTakingInterfaceProps) => {
-  const dishes = useMemo(() => inventory.filter((item) => item.type === "dish"), [inventory]);
-  const categories = useMemo(
-    () => [...new Set(dishes.map((item) => item.category))] as MenuCategory[],
-    [dishes]
-  );
-  const [selectedCategory, setSelectedCategory] = useState<MenuCategory>(
-    categories[0] ?? "Entrantes"
-  );
-  const [localCart, setLocalCart] = useState<CartItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<MenuCategory>("Entrantes");
+  const { categories, effectiveSelectedCategory, filteredItems } = useMenuFilter({
+    inventory,
+    selectedCategory,
+    searchTerm: "",
+  });
+  const { localCart, addToLocalCart, updateQty } = useOrderTakingCart(inventory);
 
-  const historicalBatches = useMemo(
-    () => buildHistoricalBatches(context.tableId, kitchenOrders, inventory),
-    [context.tableId, kitchenOrders, inventory]
-  );
+  const historicalBatches = useHistoricalOrderBatches(context.tableId, kitchenOrders);
 
-  const effectiveSelectedCategory = categories.includes(selectedCategory)
-    ? selectedCategory
-    : (categories[0] ?? "Entrantes");
-
-  const filteredItems = useMemo(
-    () => dishes.filter((item) => item.category === effectiveSelectedCategory),
-    [dishes, effectiveSelectedCategory]
-  );
-
-  const addToLocalCart = (item: MenuItem) => {
-    const existingQty = localCart.find((line) => line.id === item.id)?.qty ?? 0;
-    if (existingQty >= item.stock || item.stock <= 0) {
-      return;
-    }
-
-    setLocalCart((previousCart) => {
-      const existingLine = previousCart.find((line) => line.id === item.id);
-      if (existingLine) {
-        return previousCart.map((line) =>
-          line.id === item.id ? { ...line, qty: line.qty + 1 } : line
-        );
-      }
-
-      return [...previousCart, { ...item, qty: 1 }];
-    });
-  };
-
-  const updateQty = (itemId: number, delta: number) => {
-    setLocalCart((previousCart) =>
-      previousCart
-        .map((line) => {
-          if (line.id !== itemId) {
-            return line;
-          }
-
-          const stock = inventory.find((item) => item.id === itemId)?.stock ?? line.qty;
-          const nextQty = Math.min(Math.max(line.qty + delta, 0), stock);
-          return { ...line, qty: nextQty };
-        })
-        .filter((line) => line.qty > 0)
-    );
-  };
-
-  const subtotal = localCart.reduce((acc, item) => acc + item.price * item.qty, 0);
-  const total = subtotal + subtotal * serviceFeeRate;
+  const { subtotal, total } = useCartTotals(localCart, {
+    serviceFeeRate: DEFAULT_SERVICE_FEE_RATE,
+  });
   const historicalSubtotal = historicalBatches.reduce((acc, batch) => acc + batch.subtotal, 0);
   const confirmButtonLabel =
     historicalBatches.length > 0 ? "Agregar Orden Separada" : "Iniciar Servicio y Orden";
@@ -432,7 +307,7 @@ const OrderTakingInterface = ({
           </div>
 
           <button
-            onClick={() => onConfirmOrder({ items: localCart, total })}
+            onClick={() => onConfirmOrder({ items: localCart })}
             disabled={localCart.length === 0}
             className={`group relative w-full overflow-hidden rounded-xl py-4 text-xs font-bold uppercase tracking-widest transition-all ${
               localCart.length > 0

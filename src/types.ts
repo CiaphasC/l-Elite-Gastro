@@ -160,27 +160,25 @@ export interface InventoryItemPayload {
 }
 
 export interface KitchenOrderItem {
-  itemId?: number;
+  itemId: number;
   name: string;
   qty: number;
-  price?: number;
-  img?: string;
+  price: number;
+  img: string;
 }
 
 export interface KitchenOrder {
   id: string;
-  tableId?: number;
-  sequence?: number;
+  tableId: number;
+  sequence: number;
   items: KitchenOrderItem[];
-  time: string;
   status: KitchenStatus;
   waiter: string;
   notes?: string;
 }
 
 export interface ServiceContext {
-  tableLabel: string;
-  serviceTier: "VIP" | "Standard";
+  tableId: number;
 }
 
 export interface NotificationItem {
@@ -206,7 +204,6 @@ export interface OrderTakingContext {
 
 export interface OrderTakingConfirmationPayload {
   items: CartItem[];
-  total: number;
 }
 
 export interface SalesRecord {
@@ -248,7 +245,6 @@ export interface ClientModalState {
 }
 
 export interface UIState {
-  isLoading: boolean;
   showCheckout: boolean;
   showReservationModal: boolean;
   reservationEditingId: string | null;
@@ -285,24 +281,8 @@ export interface RestaurantState {
   ui: UIState;
 }
 
-export interface RestaurantDerived {
-  menuCategories: MenuCategory[];
-  filteredMenuItems: MenuItem[];
-  filteredInventoryItems: MenuItem[];
-  filteredClients: Client[];
-  filteredVipClients: Client[];
-  cartItemsCount: number;
-  cartSubtotal: number;
-  cartServiceFee: number;
-  cartTotal: number;
-  lowStockItems: MenuItem[];
-  selectedKitchenOrder: KitchenOrder | null;
-  unreadNotificationsCount: number;
-  selectedClient: Client | null;
-}
-
 export interface RestaurantActions {
-  finishBoot: () => void;
+  hydrateState: (nextState: RestaurantState) => void;
   setActiveTab: (tabId: ActiveTab) => void;
   setCurrencyCode: (currencyCode: SupportedCurrencyCode) => void;
   setServiceTable: (tableId: number) => void;
@@ -354,12 +334,6 @@ export interface RestaurantActions {
   openKitchenModal: (modalType: KitchenModalActionType, orderId: string) => void;
   closeKitchenModal: () => void;
   completeKitchenOrder: (orderId?: string) => void;
-}
-
-export interface RestaurantStore {
-  state: RestaurantState;
-  actions: RestaurantActions;
-  derived: RestaurantDerived;
 }
 
 export interface StatsCardProps {
