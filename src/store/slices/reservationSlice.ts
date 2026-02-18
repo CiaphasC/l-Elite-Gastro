@@ -27,6 +27,7 @@ const createTableReservedNotification = (
 export const createReservationSlice: RestaurantSliceCreator = (set) => ({
   addReservation: (payload) =>
     set((state) => {
+      const nowIso = new Date().toISOString();
       const isVipReservation =
         payload.type === "VIP" ||
         Boolean(resolveClientMatch(state.clients, payload.name)?.tier === "Gold");
@@ -101,7 +102,12 @@ export const createReservationSlice: RestaurantSliceCreator = (set) => ({
             table.id === oldTable &&
             table.status === "reservada"
           ) {
-            return { ...table, status: "disponible", guests: 0 };
+            return {
+              ...table,
+              status: "disponible",
+              guests: 0,
+              statusUpdatedAt: nowIso,
+            };
           }
 
           if (typeof finalTable === "number" && table.id === finalTable) {
@@ -109,6 +115,7 @@ export const createReservationSlice: RestaurantSliceCreator = (set) => ({
               ...table,
               status: nextStatus === "en curso" ? "ocupada" : "reservada",
               guests: payload.guests,
+              statusUpdatedAt: nowIso,
             };
           }
 

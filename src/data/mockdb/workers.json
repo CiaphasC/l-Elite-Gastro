@@ -1,0 +1,24 @@
+[
+  {
+    "id": "wrk-admin-001",
+    "fullName": "Jean-Luc Picard",
+    "email": "admin@lelite.com",
+    "password": "admin123",
+    "role": "admin",
+    "status": "active",
+    "startedAt": "2022-01-10",
+    "createdAt": "2022-01-10T08:00:00.000Z",
+    "validatedAt": "2022-01-10T08:05:00.000Z"
+  },
+  {
+    "id": "wrk-waiter-001",
+    "fullName": "Pedro Gomez",
+    "email": "mesero@lelite.com",
+    "password": "mesero123",
+    "role": "waiter",
+    "status": "active",
+    "startedAt": "2023-07-18",
+    "createdAt": "2023-07-18T09:30:00.000Z",
+    "validatedAt": "2023-07-18T09:40:00.000Z"
+  }
+]

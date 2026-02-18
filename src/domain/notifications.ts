@@ -1,4 +1,3 @@
-import { INITIAL_NOTIFICATIONS } from "@/domain/mockData";
 import type { MenuItem, NotificationItem } from "@/types";
 
 const STOCK_ALERT_THRESHOLD = 5;
@@ -108,11 +107,14 @@ export const createStockTransitionNotifications = (
   return notifications;
 };
 
-export const createStartupNotifications = (inventory: MenuItem[]): NotificationItem[] => [
+export const createStartupNotifications = (
+  inventory: MenuItem[],
+  startupNotifications: NotificationItem[] = []
+): NotificationItem[] => [
   ...inventory
     .map((item) => createStockNotificationForItem(item))
     .filter((item): item is NotificationItem => item !== null),
-  ...INITIAL_NOTIFICATIONS,
+  ...startupNotifications,
 ];
 
 const pruneResolvedStockNotifications = (

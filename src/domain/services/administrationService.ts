@@ -110,6 +110,7 @@ export const createTable = (
 ): TableInfo => {
   const nextId =
     tables.length === 0 ? 100 : Math.max(...tables.map((table) => table.id)) + 1;
+  const nowIso = new Date().toISOString();
 
   return {
     id: nextId,
@@ -118,6 +119,7 @@ export const createTable = (
     capacity: Math.max(1, Math.trunc(payload.capacity)),
     status: "disponible",
     guests: 0,
+    statusUpdatedAt: nowIso,
   };
 };
 

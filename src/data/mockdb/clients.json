@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1,
+    "name": "Isabella Valentina",
+    "tier": "Gold",
+    "visits": 42,
+    "spend": 12450,
+    "lastVisit": "Ayer",
+    "preferences": "Mesa lejos de la entrada, alergica a mariscos.",
+    "docType": "DNI",
+    "docNumber": "12345678",
+    "phone": "+51 987 654 321",
+    "history": []
+  },
+  {
+    "id": 2,
+    "name": "Carlos Delgado",
+    "tier": "Gold",
+    "visits": 15,
+    "spend": 3200,
+    "lastVisit": "Hace 1 semana",
+    "preferences": "Prefiere vino tinto Cabernet.",
+    "docType": "DNI",
+    "docNumber": "87654321",
+    "phone": "+51 912 345 678",
+    "history": []
+  },
+  {
+    "id": 3,
+    "name": "Ana Paredes",
+    "tier": "Normal",
+    "visits": 2,
+    "spend": 180,
+    "lastVisit": "Hoy",
+    "preferences": "Sin sal.",
+    "docType": "DNI",
+    "docNumber": "45678912",
+    "phone": "",
+    "history": []
+  },
+  {
+    "id": 4,
+    "name": "Jorge Martinez",
+    "tier": "Normal",
+    "visits": 5,
+    "spend": 650,
+    "lastVisit": "Hace 2 dias",
+    "preferences": "",
+    "docType": "CE",
+    "docNumber": "00123456",
+    "phone": "+51 998 877 665",
+    "history": []
+  },
+  {
+    "id": 5,
+    "name": "Roberto M.",
+    "tier": "Normal",
+    "visits": 8,
+    "spend": 940,
+    "lastVisit": "21:00",
+    "preferences": "Aniversario",
+    "docType": "DNI",
+    "docNumber": "11223344",
+    "phone": "555-1234",
+    "history": []
+  }
+]

@@ -13,6 +13,7 @@ export const createTableServiceSlice: RestaurantSliceCreator = (set) => ({
   confirmTableAction: () =>
     set((state) => {
       const { tableId, type } = state.ui.confirmationModal;
+      const nowIso = new Date().toISOString();
 
       if (!tableId || !type) {
         return {
@@ -51,12 +52,14 @@ export const createTableServiceSlice: RestaurantSliceCreator = (set) => ({
             table.id === tableId
               ? {
                   ...table,
-                  status: "disponible",
-                  guests: 0,
-                  cleaningStartTime: undefined,
-                  currentSession: null,
-                }
-              : table
+                status: "disponible",
+                guests: 0,
+                cleaningStartTime: undefined,
+                cleaningStaff: undefined,
+                currentSession: null,
+                statusUpdatedAt: nowIso,
+              }
+            : table
           ),
           notifications: withPrependedNotifications(state.notifications, [
             createNotification(
@@ -85,6 +88,8 @@ export const createTableServiceSlice: RestaurantSliceCreator = (set) => ({
                 status: "limpieza",
                 guests: 0,
                 cleaningStartTime,
+                cleaningStaff: "Roberto S.",
+                statusUpdatedAt: nowIso,
               }
             : table
         ),
@@ -109,6 +114,7 @@ export const createTableServiceSlice: RestaurantSliceCreator = (set) => ({
 
   confirmOrderTaking: (payload) =>
     set((state) => {
+      const nowIso = new Date().toISOString();
       if (!state.orderTakingContext || payload.items.length === 0) {
         return {
           orderTakingContext: null,
@@ -214,6 +220,9 @@ export const createTableServiceSlice: RestaurantSliceCreator = (set) => ({
                 ...table,
                 status: "ocupada",
                 guests: guestsInContext,
+                statusUpdatedAt: nowIso,
+                cleaningStartTime: undefined,
+                cleaningStaff: undefined,
                 currentSession: {
                   name: clientName,
                   time: "Ahora",

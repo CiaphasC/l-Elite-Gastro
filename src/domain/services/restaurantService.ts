@@ -174,6 +174,7 @@ export const appendReservationWithTableAssignment = (
   tables: TableInfo[],
   reservationPayload: ReservationPayload
 ): ReservationTableMutationResult => {
+  const nowIso = new Date().toISOString();
   const requestedTableId = normalizeReservationTable(reservationPayload.table);
 
   const requestedTable =
@@ -203,7 +204,12 @@ export const appendReservationWithTableAssignment = (
 
   const nextTables: TableInfo[] = tables.map((table): TableInfo =>
     table.id === createdReservation.table
-      ? { ...table, status: "reservada", guests: createdReservation.guests }
+      ? {
+          ...table,
+          status: "reservada",
+          guests: createdReservation.guests,
+          statusUpdatedAt: nowIso,
+        }
       : table
   );
 
@@ -219,6 +225,7 @@ export const assignTableToReservation = (
   reservationId: string,
   nextTableId: number
 ): ReservationTableMutationResult => {
+  const nowIso = new Date().toISOString();
   const reservation = reservations.find(
     (reservationItem) => reservationItem.id === reservationId
   );
@@ -264,11 +271,21 @@ export const assignTableToReservation = (
       table.id === currentTableId &&
       isTableReserved(table)
     ) {
-      return { ...table, status: "disponible", guests: 0 };
+      return {
+        ...table,
+        status: "disponible",
+        guests: 0,
+        statusUpdatedAt: nowIso,
+      };
     }
 
     if (table.id === normalizedNextTableId) {
-      return { ...table, status: "reservada", guests: reservation.guests };
+      return {
+        ...table,
+        status: "reservada",
+        guests: reservation.guests,
+        statusUpdatedAt: nowIso,
+      };
     }
 
     return table;

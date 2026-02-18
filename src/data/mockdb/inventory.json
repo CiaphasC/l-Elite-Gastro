@@ -1,0 +1,142 @@
+[
+  {
+    "id": 1,
+    "name": "Carpaccio de Wagyu A5",
+    "price": 45,
+    "category": "Entrantes",
+    "img": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&q=80&w=800",
+    "stock": 12,
+    "unit": "raciones",
+    "type": "dish"
+  },
+  {
+    "id": 2,
+    "name": "Ostras Fine de Claire",
+    "price": 38,
+    "category": "Entrantes",
+    "img": "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&q=80&w=800",
+    "stock": 3,
+    "unit": "docenas",
+    "type": "dish"
+  },
+  {
+    "id": 3,
+    "name": "Solomillo Rossini",
+    "price": 56,
+    "category": "Principales",
+    "img": "https://images.pexels.com/photos/8753745/pexels-photo-8753745.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "stock": 20,
+    "unit": "kg",
+    "type": "dish"
+  },
+  {
+    "id": 4,
+    "name": "Lubina Salvaje",
+    "price": 48,
+    "category": "Principales",
+    "img": "https://images.pexels.com/photos/6046747/pexels-photo-6046747.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "stock": 8,
+    "unit": "piezas",
+    "type": "dish"
+  },
+  {
+    "id": 5,
+    "name": "Dom Perignon '12",
+    "price": 320,
+    "category": "Vinos",
+    "img": "https://images.pexels.com/photos/33265/wine-bottle-wine-glasses-wine-ambience.jpg?auto=compress&cs=tinysrgb&w=1200",
+    "stock": 4,
+    "unit": "botellas",
+    "type": "dish"
+  },
+  {
+    "id": 6,
+    "name": "Old Fashioned Ahumado",
+    "price": 22,
+    "category": "Coctelería",
+    "img": "https://images.pexels.com/photos/8346710/pexels-photo-8346710.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "stock": 50,
+    "unit": "copas",
+    "type": "dish"
+  },
+  {
+    "id": 7,
+    "name": "Souffle Grand Marnier",
+    "price": 18,
+    "category": "Postres",
+    "img": "https://images.pexels.com/photos/32149261/pexels-photo-32149261.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    "stock": 15,
+    "unit": "raciones",
+    "type": "dish"
+  },
+  {
+    "id": 8,
+    "name": "Caviar Beluga",
+    "price": 250,
+    "category": "Entrantes",
+    "img": "https://images.unsplash.com/photo-1599488615731-7e5c03c3417f?auto=format&fit=crop&q=80&w=800",
+    "stock": 0,
+    "unit": "latas",
+    "type": "dish"
+  },
+  {
+    "id": 201,
+    "name": "Lomo Fino Nacional",
+    "price": 45,
+    "category": "Carnes",
+    "img": "https://images.unsplash.com/photo-1603048297172-c92544798d5a?auto=format&fit=crop&q=80&w=800",
+    "stock": 12.5,
+    "unit": "kg",
+    "type": "ingredient"
+  },
+  {
+    "id": 202,
+    "name": "Arroz Arborio",
+    "price": 8.5,
+    "category": "Secos",
+    "img": "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=800",
+    "stock": 25,
+    "unit": "kg",
+    "type": "ingredient"
+  },
+  {
+    "id": 203,
+    "name": "Aceite de Trufa",
+    "price": 120,
+    "category": "Aceites",
+    "img": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80&w=800",
+    "stock": 2,
+    "unit": "lt",
+    "type": "ingredient"
+  },
+  {
+    "id": 204,
+    "name": "Papas Nativas",
+    "price": 3.2,
+    "category": "Verduras",
+    "img": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80&w=800",
+    "stock": 40,
+    "unit": "kg",
+    "type": "ingredient"
+  },
+  {
+    "id": 205,
+    "name": "Salmon Fresco",
+    "price": 65,
+    "category": "Pescados",
+    "img": "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?auto=format&fit=crop&q=80&w=800",
+    "stock": 8,
+    "unit": "kg",
+    "type": "ingredient"
+  },
+  {
+    "id": 206,
+    "name": "Crema de Leche",
+    "price": 12,
+    "category": "Lácteos",
+    "img": "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=800",
+    "stock": 15,
+    "unit": "lt",
+    "type": "ingredient"
+  }
+]

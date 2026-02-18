@@ -1,0 +1,64 @@
+[
+  {
+    "id": 101,
+    "name": "Terraza Norte",
+    "code": "M-101",
+    "capacity": 4,
+    "status": "disponible",
+    "guests": 0,
+    "statusUpdatedAt": "2026-02-16T19:45:00.000Z"
+  },
+  {
+    "id": 102,
+    "name": "Salon Central A",
+    "code": "M-102",
+    "capacity": 6,
+    "status": "ocupada",
+    "guests": 4,
+    "statusUpdatedAt": "2026-02-16T20:15:00.000Z",
+    "currentSession": {
+      "name": "Familia Rossini",
+      "time": "20:15",
+      "guests": 4,
+      "type": "Cena Casual"
+    }
+  },
+  {
+    "id": 103,
+    "name": "Salon Central B",
+    "code": "M-103",
+    "capacity": 2,
+    "status": "reservada",
+    "guests": 2,
+    "statusUpdatedAt": "2026-02-16T21:00:00.000Z"
+  },
+  {
+    "id": 104,
+    "name": "Jardin Este",
+    "code": "M-104",
+    "capacity": 4,
+    "status": "disponible",
+    "guests": 0,
+    "statusUpdatedAt": "2026-02-16T21:10:00.000Z"
+  },
+  {
+    "id": 105,
+    "name": "Privado Cava",
+    "code": "M-105",
+    "capacity": 8,
+    "status": "limpieza",
+    "guests": 0,
+    "statusUpdatedAt": "2026-02-16T22:15:00.000Z",
+    "cleaningStartTime": "22:15",
+    "cleaningStaff": "Roberto S."
+  },
+  {
+    "id": 106,
+    "name": "Jardin Oeste",
+    "code": "M-106",
+    "capacity": 4,
+    "status": "disponible",
+    "guests": 0,
+    "statusUpdatedAt": "2026-02-16T20:05:00.000Z"
+  }
+]

@@ -52,6 +52,7 @@ export const createCartSlice: RestaurantSliceCreator = (set) => ({
 
   confirmCheckout: () =>
     set((state) => {
+      const nowIso = new Date().toISOString();
       if (state.cart.length === 0) {
         return {
           ui: { ...state.ui, showCheckout: false },
@@ -119,6 +120,7 @@ export const createCartSlice: RestaurantSliceCreator = (set) => ({
                   ...table,
                   status: "reservada" as const,
                   guests: confirmedReservation?.guests ?? table.guests,
+                  statusUpdatedAt: nowIso,
                 }
               : table
           )

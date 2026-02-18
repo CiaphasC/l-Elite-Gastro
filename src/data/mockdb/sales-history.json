@@ -1,0 +1,15 @@
+[
+  { "id": "sale-001", "amount": 380, "createdAt": "2026-01-20T21:10:00.000Z" },
+  { "id": "sale-002", "amount": 420, "createdAt": "2026-01-23T20:20:00.000Z" },
+  { "id": "sale-003", "amount": 510, "createdAt": "2026-01-26T22:00:00.000Z" },
+  { "id": "sale-004", "amount": 295, "createdAt": "2026-01-29T13:40:00.000Z" },
+  { "id": "sale-005", "amount": 360, "createdAt": "2026-02-01T14:15:00.000Z" },
+  { "id": "sale-006", "amount": 445, "createdAt": "2026-02-04T21:05:00.000Z" },
+  { "id": "sale-007", "amount": 520, "createdAt": "2026-02-06T19:45:00.000Z" },
+  { "id": "sale-008", "amount": 610, "createdAt": "2026-02-09T20:00:00.000Z" },
+  { "id": "sale-009", "amount": 430, "createdAt": "2026-02-10T22:20:00.000Z" },
+  { "id": "sale-010", "amount": 390, "createdAt": "2026-02-12T18:30:00.000Z" },
+  { "id": "sale-011", "amount": 520, "createdAt": "2026-02-14T20:40:00.000Z" },
+  { "id": "sale-012", "amount": 470, "createdAt": "2026-02-15T21:25:00.000Z" },
+  { "id": "sale-013", "amount": 650, "createdAt": "2026-02-16T12:10:00.000Z" }
+]

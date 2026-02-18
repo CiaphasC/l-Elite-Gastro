@@ -76,6 +76,10 @@ const pickActions = (state: RestaurantStore): RestaurantActions =>
 export const useRestaurantActions = (): RestaurantActions =>
   useRestaurantZustandStore(useShallow(pickActions));
 
+export const useRestaurantAction = <K extends keyof RestaurantActions>(
+  actionKey: K
+): RestaurantActions[K] => useRestaurantZustandStore((state) => state[actionKey]);
+
 export const useRestaurantSelector = <Selected>(
   selector: (state: RestaurantState) => Selected
 ): Selected => useRestaurantZustandStore((state) => selector(state));

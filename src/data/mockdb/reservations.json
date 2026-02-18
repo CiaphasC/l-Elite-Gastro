@@ -1,0 +1,47 @@
+[
+  {
+    "id": "rsv-000",
+    "name": "Familia Rossini",
+    "time": "20:15",
+    "guests": 4,
+    "table": 102,
+    "type": "Cena",
+    "status": "en curso"
+  },
+  {
+    "id": "rsv-001",
+    "name": "Roberto M.",
+    "time": "21:00",
+    "guests": 2,
+    "table": 103,
+    "type": "Aniversario",
+    "status": "confirmado"
+  },
+  {
+    "id": "rsv-002",
+    "name": "Familia Alarcon",
+    "time": "21:30",
+    "guests": 6,
+    "table": "---",
+    "type": "Cena",
+    "status": "pendiente"
+  },
+  {
+    "id": "rsv-003",
+    "name": "CEO Tech Corp",
+    "time": "22:00",
+    "guests": 4,
+    "table": 101,
+    "type": "Negocios",
+    "status": "vip"
+  },
+  {
+    "id": "rsv-004",
+    "name": "Isabella Valentina",
+    "time": "22:30",
+    "guests": 2,
+    "table": "---",
+    "type": "VIP",
+    "status": "vip reservado"
+  }
+]

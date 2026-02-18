@@ -107,7 +107,81 @@ const isAvailableDetails = (details: TableDetails): details is AvailableDetails 
 const isCleaningDetails = (details: TableDetails): details is CleaningDetails =>
   "startTime" in details;
 
-const getTableDetails = (table: TableInfo, reservations: Reservation[]): TableDetails | null => {
+const toValidDate = (value: string | undefined): Date | null => {
+  if (!value) {
+    return null;
+  }
+
+  const parsedDate = new Date(value);
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+};
+
+const formatClockTime = (date: Date): string =>
+  new Intl.DateTimeFormat("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+
+const formatDurationSince = (from: Date, now: Date): string => {
+  const elapsedMinutes = Math.max(
+    0,
+    Math.floor((now.getTime() - from.getTime()) / 60_000)
+  );
+
+  if (elapsedMinutes < 1) {
+    return "Ahora";
+  }
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} min`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  const remainingMinutes = elapsedMinutes % 60;
+
+  if (elapsedHours < 24) {
+    return remainingMinutes === 0
+      ? `${elapsedHours} h`
+      : `${elapsedHours} h ${remainingMinutes} min`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  const remainingHours = elapsedHours % 24;
+  if (remainingHours === 0) {
+    return `${elapsedDays} d`;
+  }
+
+  return `${elapsedDays} d ${remainingHours} h`;
+};
+
+const resolveAvailableDetails = (table: TableInfo, now: Date): AvailableDetails => {
+  const statusDate = toValidDate(table.statusUpdatedAt);
+  if (!statusDate) {
+    return { lastFree: "--:--", duration: "N/A" };
+  }
+
+  return {
+    lastFree: formatClockTime(statusDate),
+    duration: formatDurationSince(statusDate, now),
+  };
+};
+
+const resolveCleaningDetails = (table: TableInfo): CleaningDetails => {
+  const statusDate = toValidDate(table.statusUpdatedAt);
+  return {
+    startTime: statusDate
+      ? formatClockTime(statusDate)
+      : table.cleaningStartTime || "--:--",
+    staff: table.cleaningStaff || "Staff asignado",
+  };
+};
+
+const getTableDetails = (
+  table: TableInfo,
+  reservations: Reservation[],
+  now: Date
+): TableDetails | null => {
   switch (table.status) {
     case "reservada": {
       const reservation = reservations.find(
@@ -159,15 +233,9 @@ const getTableDetails = (table: TableInfo, reservations: Reservation[]): TableDe
       };
     }
     case "disponible":
-      return {
-        lastFree: "19:45",
-        duration: "45 min",
-      };
+      return resolveAvailableDetails(table, now);
     case "limpieza":
-      return {
-        startTime: table.cleaningStartTime || "22:15",
-        staff: "Roberto S.",
-      };
+      return resolveCleaningDetails(table);
     default:
       return null;
   }
@@ -325,13 +393,28 @@ const TablesView = ({
   onOpenReservationFromTable,
 }: TablesViewProps) => {
   const [hoveredTable, setHoveredTable] = useState<number | null>(null);
+  const [clockTick, setClockTick] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setClockTick(Date.now());
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   const tableDetailsById = useMemo(
-    () =>
+    () => {
+      const referenceNow = new Date(clockTick);
+      return (
       new Map<number, TableDetails | null>(
-        tables.map((table) => [table.id, getTableDetails(table, reservations)])
-      ),
-    [tables, reservations]
+        tables.map((table) => [table.id, getTableDetails(table, reservations, referenceNow)])
+      )
+      );
+    },
+    [tables, reservations, clockTick]
   );
 
   useEffect(() => {

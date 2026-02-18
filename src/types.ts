@@ -105,7 +105,9 @@ export interface TableInfo {
   capacity: number;
   status: TableStatus;
   guests: number;
+  statusUpdatedAt?: string;
   cleaningStartTime?: string;
+  cleaningStaff?: string;
   currentSession?: TableSessionSummary | null;
 }
 

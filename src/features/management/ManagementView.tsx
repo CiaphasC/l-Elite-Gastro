@@ -64,6 +64,8 @@ const ManagementView = ({
   const [workerListMode, setWorkerListMode] = useState<WorkerListMode>("listing");
   const [workerRoleFilter, setWorkerRoleFilter] = useState<WorkerRoleFilter>("all");
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const activeTabPanelRef = useRef<HTMLDivElement | null>(null);
+  const workerModePanelRef = useRef<HTMLDivElement | null>(null);
   const tableSortSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 2 },
@@ -86,7 +88,33 @@ const ManagementView = ({
     return () => {
       timeline.kill();
     };
+  }, []);
+
+  useEffect(() => {
+    if (!activeTabPanelRef.current) {
+      return;
+    }
+
+    gsap.killTweensOf(activeTabPanelRef.current);
+    gsap.fromTo(
+      activeTabPanelRef.current,
+      { autoAlpha: 0, y: 14, filter: "blur(8px)" },
+      { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.42, ease: "power3.out" }
+    );
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "workers" || !workerModePanelRef.current) {
+      return;
+    }
+
+    gsap.killTweensOf(workerModePanelRef.current);
+    gsap.fromTo(
+      workerModePanelRef.current,
+      { autoAlpha: 0, y: 10, filter: "blur(6px)" },
+      { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.34, ease: "power2.out" }
+    );
+  }, [workerListMode, activeTab]);
 
   const { filteredWorkers, scopedWorkers, roleScopedCounts } = useFilteredWorkers({
     workers,
@@ -165,13 +193,20 @@ const ManagementView = ({
   return (
     <div ref={containerRef} className="space-y-7">
       <div className="management-animate flex flex-wrap items-center justify-between gap-4">
-        <div className="flex rounded-full border border-[#E5C07B]/20 bg-[#E5C07B]/5 p-1">
+        <div className="relative grid w-full max-w-[380px] grid-cols-2 rounded-full border border-[#E5C07B]/20 bg-[#E5C07B]/5 p-1 sm:w-auto sm:min-w-[360px]">
+          <div
+            className={`absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-full bg-[#E5C07B] shadow-[0_0_18px_rgba(229,192,123,0.3)] transition-transform duration-300 ${
+              activeTab === "workers"
+                ? "translate-x-[calc(100%+4px)]"
+                : "translate-x-0"
+            }`}
+          />
           <button
             type="button"
             onClick={() => setActiveTab("tables")}
-            className={`rounded-full px-5 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+            className={`relative z-10 rounded-full px-5 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
               activeTab === "tables"
-                ? "bg-[#E5C07B] text-black shadow-[0_0_18px_rgba(229,192,123,0.3)]"
+                ? "text-black"
                 : "text-[#E5C07B]/60 hover:text-[#E5C07B]"
             }`}
           >
@@ -180,9 +215,9 @@ const ManagementView = ({
           <button
             type="button"
             onClick={() => setActiveTab("workers")}
-            className={`rounded-full px-5 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+            className={`relative z-10 rounded-full px-5 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
               activeTab === "workers"
-                ? "bg-[#E5C07B] text-black shadow-[0_0_18px_rgba(229,192,123,0.3)]"
+                ? "text-black"
                 : "text-[#E5C07B]/60 hover:text-[#E5C07B]"
             }`}
           >
@@ -213,126 +248,137 @@ const ManagementView = ({
         )}
       </div>
 
-      {activeTab === "tables" ? (
-        <DndContext
-          sensors={tableSortSensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleTableDragEnd}
-        >
-          <SortableContext items={tableSortableItems} strategy={rectSortingStrategy}>
-            <div className="management-animate grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {tables.map((table, index) => (
-                <SortableTableCard
-                  key={table.id}
-                  table={table}
-                  displayOrder={index + 1}
-                  statusBadgeClassName={tableStatusBadgeMap[table.status]}
-                  onEditTable={openEditTableModal}
-                  onRequestRemoveTable={openDeleteTableModal}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      ) : (
-        <div className="management-animate glass-panel rounded-[2rem] border border-white/10 p-5 sm:p-6">
-          <div className="mb-5 flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex rounded-full border border-[#E5C07B]/20 bg-[#E5C07B]/5 p-1">
-                <button
-                  type="button"
-                  onClick={() => setWorkerListMode("validation")}
-                  className={`rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
-                    workerListMode === "validation"
-                      ? "bg-[#E5C07B] text-black shadow-[0_0_18px_rgba(229,192,123,0.3)]"
-                      : "text-[#E5C07B]/60 hover:text-[#E5C07B]"
-                  }`}
-                >
-                  Validación
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWorkerListMode("listing")}
-                  className={`rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
-                    workerListMode === "listing"
-                      ? "bg-[#E5C07B] text-black shadow-[0_0_18px_rgba(229,192,123,0.3)]"
-                      : "text-[#E5C07B]/60 hover:text-[#E5C07B]"
-                  }`}
-                >
-                  Listado
-                </button>
+      <div ref={activeTabPanelRef} className="management-animate">
+        {activeTab === "tables" ? (
+          <DndContext
+            sensors={tableSortSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleTableDragEnd}
+          >
+            <SortableContext items={tableSortableItems} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {tables.map((table, index) => (
+                  <SortableTableCard
+                    key={table.id}
+                    table={table}
+                    displayOrder={index + 1}
+                    statusBadgeClassName={tableStatusBadgeMap[table.status]}
+                    onEditTable={openEditTableModal}
+                    onRequestRemoveTable={openDeleteTableModal}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <div className="glass-panel rounded-[2rem] border border-white/10 p-5 sm:p-6">
+            <div className="mb-5 flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="relative grid w-full max-w-[300px] grid-cols-2 rounded-full border border-[#E5C07B]/20 bg-[#E5C07B]/5 p-1 sm:w-auto sm:min-w-[270px]">
+                  <div
+                    className={`absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-full bg-[#E5C07B] shadow-[0_0_18px_rgba(229,192,123,0.3)] transition-transform duration-300 ${
+                      workerListMode === "listing"
+                        ? "translate-x-[calc(100%+4px)]"
+                        : "translate-x-0"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setWorkerListMode("validation")}
+                    className={`relative z-10 rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
+                      workerListMode === "validation"
+                        ? "text-black"
+                        : "text-[#E5C07B]/60 hover:text-[#E5C07B]"
+                    }`}
+                  >
+                    Validación
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWorkerListMode("listing")}
+                    className={`relative z-10 rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
+                      workerListMode === "listing"
+                        ? "text-black"
+                        : "text-[#E5C07B]/60 hover:text-[#E5C07B]"
+                    }`}
+                  >
+                    Listado
+                  </button>
+                </div>
+
+                <div className="flex rounded-full border border-white/10 bg-black/30 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setWorkerRoleFilter("all")}
+                    className={`rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${
+                      workerRoleFilter === "all"
+                        ? "bg-white/15 text-white"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    Todos ({scopedWorkers.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWorkerRoleFilter("admin")}
+                    className={`rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${
+                      workerRoleFilter === "admin"
+                        ? "bg-white/15 text-white"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    Admin ({roleScopedCounts.admin})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWorkerRoleFilter("waiter")}
+                    className={`rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${
+                      workerRoleFilter === "waiter"
+                        ? "bg-white/15 text-white"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    Mesero ({roleScopedCounts.waiter})
+                  </button>
+                </div>
               </div>
 
-              <div className="flex rounded-full border border-white/10 bg-black/30 p-1">
-                <button
-                  type="button"
-                  onClick={() => setWorkerRoleFilter("all")}
-                  className={`rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${
-                    workerRoleFilter === "all"
-                      ? "bg-white/15 text-white"
-                      : "text-zinc-500 hover:text-zinc-300"
-                  }`}
-                >
-                  Todos ({scopedWorkers.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWorkerRoleFilter("admin")}
-                  className={`rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${
-                    workerRoleFilter === "admin"
-                      ? "bg-white/15 text-white"
-                      : "text-zinc-500 hover:text-zinc-300"
-                  }`}
-                >
-                  Admin ({roleScopedCounts.admin})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWorkerRoleFilter("waiter")}
-                  className={`rounded-full px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${
-                    workerRoleFilter === "waiter"
-                      ? "bg-white/15 text-white"
-                      : "text-zinc-500 hover:text-zinc-300"
-                  }`}
-                >
-                  Mesero ({roleScopedCounts.waiter})
-                </button>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="group relative w-full max-w-sm">
+                  <Search
+                    size={15}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-[#E5C07B]"
+                  />
+                  <input
+                    value={workerSearchTerm}
+                    onChange={(event) => setWorkerSearchTerm(event.target.value)}
+                    placeholder="Filtrar por nombre o correo..."
+                    className="w-full rounded-full border border-white/10 bg-black/30 py-2.5 pl-11 pr-4 text-sm text-white outline-none transition-all placeholder:text-zinc-600 focus:border-[#E5C07B]/40 focus:bg-black/50"
+                  />
+                </div>
+                <span className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                  {filteredWorkers.length} de {scopedWorkers.length} cuentas
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="group relative w-full max-w-sm">
-                <Search
-                  size={15}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-[#E5C07B]"
-                />
-                <input
-                  value={workerSearchTerm}
-                  onChange={(event) => setWorkerSearchTerm(event.target.value)}
-                  placeholder="Filtrar por nombre o correo..."
-                  className="w-full rounded-full border border-white/10 bg-black/30 py-2.5 pl-11 pr-4 text-sm text-white outline-none transition-all placeholder:text-zinc-600 focus:border-[#E5C07B]/40 focus:bg-black/50"
-                />
-              </div>
-              <span className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
-                {filteredWorkers.length} de {scopedWorkers.length} cuentas
-              </span>
+            <div ref={workerModePanelRef}>
+              <WorkerAccountsTable
+                workers={filteredWorkers}
+                mode={workerListMode}
+                emptyMessage={
+                  workerListMode === "validation"
+                    ? "No hay cuentas pendientes de validación para este filtro."
+                    : "No hay cuentas activas para este filtro."
+                }
+                onValidateWorker={onValidateWorker}
+                onEditWorker={openEditWorkerModal}
+                onRemoveWorker={onRemoveWorker}
+              />
             </div>
           </div>
-
-          <WorkerAccountsTable
-            workers={filteredWorkers}
-            mode={workerListMode}
-            emptyMessage={
-              workerListMode === "validation"
-                ? "No hay cuentas pendientes de validación para este filtro."
-                : "No hay cuentas activas para este filtro."
-            }
-            onValidateWorker={onValidateWorker}
-            onEditWorker={openEditWorkerModal}
-            onRemoveWorker={onRemoveWorker}
-          />
-        </div>
-      )}
+        )}
+      </div>
 
       <TableCreateModal
         key={`table-modal-${isTableModalOpen ? editingTable?.id ?? "create" : "closed"}`}

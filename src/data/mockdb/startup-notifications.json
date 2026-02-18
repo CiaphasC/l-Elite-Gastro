@@ -1,0 +1,13 @@
+[
+  {
+    "id": "notif-startup-sync",
+    "type": "success",
+    "title": "Servicio Iniciado",
+    "message": "El sistema se sincronizo con cocina y bodega correctamente.",
+    "time": "Hace 1 min",
+    "read": true,
+    "meta": {
+      "navigateTo": "kitchen"
+    }
+  }
+]
