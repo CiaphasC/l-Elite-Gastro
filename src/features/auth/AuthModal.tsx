@@ -12,6 +12,9 @@ interface AuthModalProps {
   onLogin: (role: UserRole) => void;
 }
 
+const SYSTEM_LOGIN_EMAIL = "admin@taxystem.com";
+const SYSTEM_LOGIN_PASSWORD = "123administracion";
+
 const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
   const [isRegister, setIsRegister] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>("admin");
@@ -123,6 +126,13 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
 
     if (!normalizedEmail || !safePassword) {
       setFormError("Ingresa correo y contraseña para continuar.");
+      return;
+    }
+
+    const isValidSystemCredential =
+      normalizedEmail === SYSTEM_LOGIN_EMAIL && safePassword === SYSTEM_LOGIN_PASSWORD;
+    if (!isValidSystemCredential) {
+      setFormError("Credenciales inválidas. Usa el acceso autorizado del sistema.");
       return;
     }
 
