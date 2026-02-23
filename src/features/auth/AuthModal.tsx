@@ -15,6 +15,11 @@ interface AuthModalProps {
 const SYSTEM_LOGIN_EMAIL = "admin@taxystem.com";
 const SYSTEM_LOGIN_PASSWORD = "123administracion";
 
+const getSafeFormValue = (formData: FormData, key: string): string => {
+  const rawValue = formData.get(key);
+  return typeof rawValue === "string" ? rawValue : "";
+};
+
 const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
   const [isRegister, setIsRegister] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>("admin");
@@ -86,8 +91,13 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const normalizedEmail = email.trim().toLowerCase();
-    const safePassword = password.trim();
+    const formData = new FormData(event.currentTarget);
+    const stateEmail = email.trim();
+    const formEmail = getSafeFormValue(formData, "email").trim();
+    const normalizedEmail = (stateEmail || formEmail).toLowerCase();
+    const statePassword = password.trim();
+    const formPassword = getSafeFormValue(formData, "password").trim();
+    const safePassword = statePassword || formPassword;
 
     if (isRegister) {
       if (!fullName.trim() || !normalizedEmail || !safePassword || !startedAt) {
@@ -132,7 +142,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
     const isValidSystemCredential =
       normalizedEmail === SYSTEM_LOGIN_EMAIL && safePassword === SYSTEM_LOGIN_PASSWORD;
     if (!isValidSystemCredential) {
-      setFormError("Credenciales inválidas. Usa el acceso autorizado del sistema.");
+      setFormError("Credenciales invalidas. Usa admin@taxystem.com / 123administracion.");
       return;
     }
 
@@ -214,6 +224,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
                     size={18}
                   />
                   <input
+                    name="fullName"
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
                     type="text"
@@ -234,6 +245,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
                   size={18}
                 />
                 <input
+                  name="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   type="email"
@@ -253,6 +265,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
                   size={18}
                 />
                 <input
+                  name="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   type="password"
@@ -273,6 +286,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
                     size={18}
                   />
                   <input
+                    name="inviteCode"
                     value={inviteCode}
                     onChange={(event) => setInviteCode(event.target.value)}
                     type="text"
@@ -294,6 +308,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
                     size={18}
                   />
                   <input
+                    name="startedAt"
                     value={startedAt}
                     onChange={(event) => setStartedAt(event.target.value)}
                     type="date"
