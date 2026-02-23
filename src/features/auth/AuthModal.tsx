@@ -12,7 +12,7 @@ interface AuthModalProps {
   onLogin: (role: UserRole) => void;
 }
 
-const SYSTEM_LOGIN_EMAIL = "admin@taxystem.com";
+const SYSTEM_LOGIN_EMAIL = "admin@taxsystem.com";
 const SYSTEM_LOGIN_PASSWORD = "123administracion";
 
 const getSafeFormValue = (formData: FormData, key: string): string => {
@@ -142,7 +142,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }: AuthModalProps) => {
     const isValidSystemCredential =
       normalizedEmail === SYSTEM_LOGIN_EMAIL && safePassword === SYSTEM_LOGIN_PASSWORD;
     if (!isValidSystemCredential) {
-      setFormError("Credenciales invalidas. Usa admin@taxystem.com / 123administracion.");
+      setFormError("Credenciales invalidas. Usa admin@taxsystem.com / 123administracion.");
       return;
     }
 
